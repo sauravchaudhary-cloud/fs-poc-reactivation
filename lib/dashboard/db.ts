@@ -23,7 +23,9 @@ const TEXT_COLUMNS = new Set([
 ]);
 
 // Opens the file, or a throwaway database for ":memory:". A new database starts with the sample customers.
-export function openDatabase(file = "data/dashboard.db") {
+// ponytail: on Vercel only /tmp is writable, and it's per instance and wiped on cold starts, so imports and logged calls
+// there don't last; a hosted database (Neon, Turso) behind these same functions if the deployed dashboard must keep data.
+export function openDatabase(file = process.env.VERCEL ? "/tmp/dashboard.db" : "data/dashboard.db") {
   if (file !== ":memory:") mkdirSync(dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
   createTables(db);
