@@ -1,5 +1,6 @@
 // The panels around the phone: the segments and their conversations (a row on phones, a list on laptops), and what's
 // behind the open conversation, with the Stress test switch.
+import Link from "next/link";
 import { flows, segments, sendGates } from "@/content/flows";
 import type { Segment } from "@/lib/bot";
 import { Icon } from "./icons";
@@ -73,6 +74,9 @@ export function SegmentBar({ flowIdx, restart, stress, setStress }: PanelProps &
         <button onClick={() => restart(flowIdx)} className="shrink-0 px-2 text-xs font-medium text-[#008069]">
           ↻ Replay
         </button>
+        <Link href="/dashboard" className="shrink-0 px-2 text-xs font-medium text-[#008069]">
+          Dashboard →
+        </Link>
         <label className="flex shrink-0 cursor-pointer items-center gap-1 px-1 text-xs text-[#3b4a54]">
           <input
             type="checkbox"
@@ -101,7 +105,15 @@ export function SegmentNav({ flowIdx, restart }: PanelProps) {
   const chosen = segmentOf(flowIdx);
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#008069]">FoodStories · reactivation</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#008069]">FoodStories · reactivation</p>
+        <Link
+          href="/dashboard"
+          className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-[#008069] ring-1 ring-[#008069]/30 hover:bg-[#d9fdd3]"
+        >
+          Dashboard →
+        </Link>
+      </div>
       <h1 className="mt-0.5 text-lg font-semibold leading-snug">WhatsApp conversations</h1>
       <p className="mt-1 text-xs leading-relaxed text-[#667781]">
         The deck&apos;s six segments, each opened into the conversations derived from it.
