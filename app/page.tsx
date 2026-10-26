@@ -104,7 +104,7 @@ export default function Home() {
   const [picked, setPicked] = useState<Option | null>(null);
   const [draft, setDraft] = useState("");
   const [stress, setStress] = useState(false); // play the fallbacks, and show what the bot does
-  const [aiProvider, setAiProvider] = useState<"gemini" | "anthropic">("gemini");
+  const [aiProvider, setAiProvider] = useState<"gemini" | "anthropic">("anthropic");
   const [aiModel, setAiModel] = useState("haiku");
   const [log, setLog] = useState<Entry[]>([]);
   const [logOpen, setLogOpen] = useState<boolean | null>(null);

@@ -42,3 +42,4 @@ next-env.d.ts
 
 # the dashboard's customers and calls (personal data)
 /data/
+/logs/
