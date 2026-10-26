@@ -1,0 +1,4 @@
+# Docs stay as written; the lockfile is npm's; CodeGraph manages its own folder.
+*.md
+package-lock.json
+.codegraph/

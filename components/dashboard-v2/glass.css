@@ -1,0 +1,156 @@
+/*!
+ * Liquid glass for /dashboard-v2, from the liquid-glass skill's stylesheet: the tint, the rim, and the backdrop the
+ * glass has something to show. Changes from the skill's file:
+ * - Lagoon, light only: a pale aqua page lit by turquoise, aqua, seafoam and a little coral (the skill's violet, pink
+ *   and cyan, swapped), white-frosted glass, coral glass for the main actions and aqua for what's selected.
+ *   /dashboard keeps FoodStories' colours.
+ * - The page sets its own values for globals.css's colour tokens, so text-ink, bg-accent and the rest come out in
+ *   Lagoon here, whatever globals.css holds.
+ * - Panels carry a white frost over the tint: the numbers have to read over the strongest glow (secondary text 6:1,
+ *   coral text 4.8:1 at worst). The sticky bar and the drawer frost harder, since the page scrolls under them.
+ * - Chips paint tint and rim only. Every chip here sits inside a glass panel, and a panel with a backdrop-filter is
+ *   its children's backdrop root, so a chip's own blur would only ever see the panel.
+ * The refraction, the other half, is ./glass.tsx.
+ */
+
+/* Tailwind's own layer order, declared here too so its utilities beat these classes whichever file loads first. */
+@layer theme, base, components, utilities;
+
+:root {
+  /* Tint: white → 70% gray, near-transparent. Colorless by design: the light comes through from behind. */
+  --glass-tint-top: rgba(255, 255, 255, 0.06);
+  --glass-tint-bottom: rgba(179, 179, 179, 0.06);
+  /* Rim: three inset highlights that read as a polished edge. */
+  --glass-rim-top: rgba(255, 255, 255, 0.55);
+  --glass-rim-hairline: rgba(255, 255, 255, 0.12);
+  --glass-rim-bottom: rgba(255, 255, 255, 0.06);
+  --glass-border: rgba(11, 47, 51, 0.1);
+  --glass-shadow: 0 10px 30px rgba(11, 47, 51, 0.08);
+  --glass-frost-top: rgba(255, 255, 255, 0.5);
+  --glass-frost-bottom: rgba(255, 255, 255, 0.36);
+  --glass-modal-tint: rgba(255, 255, 255, 0.66); /* the bar and the drawer, over whatever scrolls under them */
+
+  --glass-page-bg: #e4f2f0;
+  --glass-light-1: rgba(20, 184, 166, 0.24); /* turquoise */
+  --glass-light-2: rgba(34, 211, 238, 0.24); /* aqua */
+  --glass-light-3: rgba(94, 234, 212, 0.3); /* seafoam */
+  --glass-light-4: rgba(255, 122, 89, 0.22); /* coral */
+}
+
+/* Reduce Transparency: the same page on near-solid glass. */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-frost-top: rgba(255, 255, 255, 0.92);
+    --glass-frost-bottom: rgba(255, 255, 255, 0.88);
+    --glass-modal-tint: rgba(255, 255, 255, 0.95);
+  }
+}
+
+@layer components {
+  /* The page itself (scrollbar, overscroll), only while /dashboard-v2 is on screen: Next keeps a route's
+     stylesheets after you leave it. */
+  html:has(.liquid-glass-backdrop) {
+    color-scheme: light;
+    background: var(--glass-page-bg);
+  }
+
+  /* The backdrop is part of the recipe: glass shows what's behind it, and over a flat fill that's nothing. */
+  .liquid-glass-backdrop {
+    position: relative;
+    isolation: isolate;
+    background: var(--glass-page-bg);
+    --color-ink: #0b2f33; /* deep teal */
+    --color-charcoal: #355a5d;
+    --color-accent: #0d9488; /* teal: the charts' main series, focus rings, what's selected */
+    --color-accent-ink: #b4381b; /* deep coral: due dates and the links that need a look */
+    --color-good: #065f46; /* emerald: wins */
+    --color-gold-ink: #b4381b; /* declines, with the arrow */
+  }
+  .liquid-glass-backdrop::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    /* Sized to the viewport and overlapping, so a wide screen gets one lit field rather than separate spots. */
+    background:
+      radial-gradient(60% 70% at 0% 0%, var(--glass-light-1), transparent 70%),
+      radial-gradient(50% 60% at 100% 0%, var(--glass-light-2), transparent 70%),
+      radial-gradient(45% 55% at 55% 60%, var(--glass-light-3), transparent 70%),
+      radial-gradient(60% 65% at 100% 100%, var(--glass-light-4), transparent 70%);
+  }
+
+  /* Panel tier. ./glass.tsx refracts every element with this class. */
+  .liquid-glass {
+    position: relative;
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    background: linear-gradient(180deg, var(--glass-tint-top), var(--glass-tint-bottom));
+    box-shadow:
+      var(--glass-shadow),
+      inset 0 1px 0 var(--glass-rim-top),
+      inset 0 0 0 1px var(--glass-rim-hairline),
+      inset 0 -1px 0 var(--glass-rim-bottom);
+    /* Where SVG backdrop filters don't render. Where they do, glass.tsx overwrites this with url(#…). Prefixed
+       first: the other way round, the CSS minifier keeps only the prefixed one, and Firefox gets no blur. */
+    -webkit-backdrop-filter: blur(3px) saturate(125%);
+    backdrop-filter: blur(3px) saturate(125%);
+  }
+  .liquid-glass--frost {
+    background:
+      linear-gradient(180deg, var(--glass-frost-top), var(--glass-frost-bottom)),
+      linear-gradient(180deg, var(--glass-tint-top), var(--glass-tint-bottom));
+  }
+  .liquid-glass--modal {
+    background:
+      linear-gradient(180deg, var(--glass-modal-tint), var(--glass-modal-tint)),
+      linear-gradient(180deg, var(--glass-tint-top), var(--glass-tint-bottom));
+  }
+
+  /* Chip tier: pills, tabs, ghost buttons. Sized with utilities. */
+  .liquid-glass-chip {
+    border: 1px solid var(--glass-border);
+    border-radius: 9999px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.3));
+    box-shadow:
+      0 1px 2px rgba(11, 47, 51, 0.06),
+      inset 0 1px 0 var(--glass-rim-top);
+  }
+  :is(a, button).liquid-glass-chip:hover {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.5));
+  }
+
+  /* Fields: the same glass, pressed in rather than raised. */
+  .glass-field {
+    border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.5);
+    box-shadow:
+      inset 0 1px 2px rgba(11, 47, 51, 0.08),
+      0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  /* Colored glass, the skill's primary-CTA recipe: only the tint changes, and the rim is restated, since colored
+     glass without one reads as a flat button. Coral for the main actions (dark text, 7.9:1); aqua for what's
+     selected and the second rank (9.7:1). */
+  .glass-primary {
+    color: #1a0d08;
+    border: 1px solid rgba(255, 140, 110, 0.7);
+    background: linear-gradient(180deg, rgba(255, 145, 112, 0.97), rgba(255, 112, 80, 0.92));
+    box-shadow:
+      0 6px 16px rgba(255, 122, 89, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+  }
+  :is(a, button).glass-primary:hover {
+    background: linear-gradient(180deg, rgba(255, 162, 133, 0.98), rgba(255, 126, 95, 0.95));
+  }
+  .glass-strong {
+    color: #04201f;
+    border: 1px solid rgba(20, 184, 166, 0.45);
+    background: linear-gradient(180deg, rgba(103, 232, 249, 0.95), rgba(45, 212, 191, 0.88));
+    box-shadow:
+      0 6px 16px rgba(20, 184, 166, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.06);
+  }
+}

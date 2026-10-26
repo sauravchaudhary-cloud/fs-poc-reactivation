@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+/* The reactivation dashboard (app/dashboard), in FoodStories' own colours (from foodstories.shop): wine, cream, forest
+   and ochre on ivory. Every text pairing clears 4.5:1. There's no alarm red: their error red sits too close to the wine
+   to tell apart (ΔE 9.9), so declines take ochre and an arrow, and overdue items the wine. */
+@theme {
+  --color-page: #fbf8f4; /* ivory */
+  --color-ink: #2a1517; /* wine-black: text and numbers */
+  --color-charcoal: #6b625f; /* warm grey: secondary text, 5.0:1 even on cream */
+  --color-accent: #a13940; /* FoodStories wine: actions and the series that matters; white text on it 6.6:1 */
+  --color-accent-ink: #8b2635; /* deeper wine: hover, text on tints */
+  --color-blush: #fbf3f2; /* wine tint: the selected row, action badges */
+  --color-cream: #f4eadf; /* FoodStories cream: banners */
+  --color-surface: #f6f1eb; /* quiet fills: tabs, tracks, hovers */
+  --color-rule: #eae2d9; /* hairlines */
+  --color-good: #245b43; /* FoodStories forest: wins */
+  --color-good-tint: #e8f0e4;
+  --color-gold: #cb8636; /* ochre */
+  --color-gold-ink: #8a5a1f; /* ochre for text: declines, cautions */
+  --color-gold-tint: #fbefe2;
+}
+@theme inline {
+  --font-ui: var(--font-schibsted);
+}
