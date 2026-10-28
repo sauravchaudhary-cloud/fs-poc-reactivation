@@ -61,7 +61,7 @@ assert.deepEqual(
 // An export as it comes: other names for the columns, a row without a phone, the same phone twice, a city with two
 // stores, and a column the dashboard doesn't know (Email).
 const csv = `Mobile,Customer Name,Store,Segment,Flow,Sent On,Replied,Basket,First_Order_At,Second Order At,Revenue,LTV,Email
-98765 43210,Anjali Rao,Banjara Hills,,1.1,21/09/2026,yes,1,2026-09-24,2026-10-20,"₹4,200",14200,a@x.in
+98765 43210,Anjali Rao,Banjara Hills,,2.1,21/09/2026,yes,1,2026-09-24,2026-10-20,"₹4,200",14200,a@x.in
 ,No Phone,,,,,,,,,,,
 98765 43210,Anjali R,,,,,,,,,,,
 91234 56789,Dev,Mumbai,Quiet regulars,,2026-10-01,no,,,,,,`;
@@ -85,7 +85,7 @@ assert.ok(
 const first = toCustomers(parseCsv(csv.split("\n").slice(0, 2).join("\n"))).rows[0];
 assert.deepEqual(
   [first.store, first.segment, first.flow, first.revenue, first.lifetime_value, JSON.parse(first.extra).Email],
-  ["hyderabad", 1, "vip-kept-aside", 4200, 14200, "a@x.in"],
+  ["hyderabad", 2, "vip-kept-aside", 4200, 14200, "a@x.in"],
 );
 // Won back: a second order within 45 days of the message.
 assert.ok(wonBack(first) && stageOf(first) === 5, "a second order 29 days after the message counts");
@@ -124,7 +124,7 @@ assert.equal(view([call("call_back", "2026-10-20", "2026-10-22")]).counts.due, 1
 const doNotCall = view([call("do_not_call", "2026-10-10")]);
 assert.deepEqual(doNotCall.counts, { due: 0, hot: 0, unhappy: 0, vip: 0 });
 assert.equal(doNotCall.rows[0].stop, "Do not call");
-assert.equal(view([], { segment: 2 }).inactive, 0, "the segment filter applies");
+assert.equal(view([], { segment: 1 }).inactive, 0, "the segment filter applies");
 
 // ── Sample data ───────────────────────────────────────────────────────────────────────────────────────────────────
 // The sample, with calls only on its warm leads: a funnel that only narrows, numbers nobody can be called on, and a
@@ -165,6 +165,13 @@ assert.equal(
 // Seeds the sample, the first import clears it, later imports touch only their own columns, calls persist.
 const db = openDatabase(":memory:");
 assert.equal(db.customers().length, sample.length);
+// A sample seeded on an earlier day is seeded again, dated from the new day.
+db.sampleOfToday(today);
+assert.deepEqual(
+  db.customers().map((customer) => customer.sent_at),
+  sample.map((customer) => customer.sent_at),
+  "the sample is dated from the day it's seeded",
+);
 db.importCustomers(rows, columns);
 assert.equal(db.customers().length, 2);
 assert.equal(db.calls().length, 0, "the sample's calls go with it");
@@ -185,4 +192,6 @@ assert.deepEqual(
   ["Anjali R", 0, 1],
   "names and calls survive a narrower import",
 );
+db.sampleOfToday("2026-10-23");
+assert.equal(db.customers().length, 2, "a real import is never reseeded");
 console.log("dashboard ok:", sample.length, "sample customers");

@@ -1,10 +1,20 @@
-// 3 · Inactive, still browsing: their last visit decides the first message
+// 4 · Inactive, still browsing: their last visit decides the first message
 import type { Flow } from "../../lib/bot.ts";
-import { basket, ROWS, nextSlots, slotList, slotOpen, slotGone, expressDelivery, CLOSEST } from "./shared.ts";
+import {
+  basket,
+  catalogPhoto,
+  ROWS,
+  nextSlots,
+  slotList,
+  slotOpen,
+  slotGone,
+  expressDelivery,
+  CLOSEST,
+} from "./shared.ts";
 
 export const stillBrowsing: Flow[] = [
   {
-    n: 3,
+    n: 4,
     name: "Reached checkout",
     key: "browse-checkout",
     signal: "Got to checkout, then stopped because the slot they wanted was full",
@@ -92,7 +102,7 @@ export const stillBrowsing: Flow[] = [
     },
   },
   {
-    n: 3,
+    n: 4,
     name: "Left items in a cart",
     key: "browse-cart",
     signal: "Left a babka and avocados in the cart",
@@ -157,7 +167,7 @@ export const stillBrowsing: Flow[] = [
     },
   },
   {
-    n: 3,
+    n: 4,
     name: "Viewed a product",
     key: "browse-product",
     signal: "Looked at Chiran matcha in the last 14 days",
@@ -173,7 +183,7 @@ export const stillBrowsing: Flow[] = [
       "One template with the product, its origin line and pairing as variables, so every product doesn't need its own approval; the pairing is diet-guarded too (macarons carry egg)",
     ],
     start: {
-      photo: { emoji: "🍵", alt: "Chiran matcha and coconut macarons" },
+      photo: catalogPhoto("1/0/prd_7280_36e554fc15fb2b2c.jpg", "Chiran matcha"),
       text: "Hi Sana,\n\nFresh *Chiran matcha* is in at Lavelle Road. It's a shade-grown green tea from southern Japan, stone-ground, with nothing else in it. 🍵\n\nIt's been a little while since your last order, and we'd love to welcome you back.\n\nThe matcha pairs beautifully with our own *Coconut Macarons*. Shall we add both to your basket?",
       footer: "FoodStories Lavelle Road · Reply STOP to opt out",
       buttons: [
@@ -190,7 +200,11 @@ export const stillBrowsing: Flow[] = [
             "Check out",
             "/checkout",
           ),
-          needs: { what: "both are still in stock at Lavelle Road and both adds succeeded", else: "partial" },
+          needs: {
+            what: "both are still in stock at Lavelle Road and both adds succeeded",
+            else: "partial",
+            stock: ["foodstories-gluten-free-coconut-macarons"],
+          },
           bot: "adds both, store-scoped and idempotent",
         },
       ],
@@ -211,7 +225,11 @@ export const stillBrowsing: Flow[] = [
             "Check out",
             "/checkout",
           ),
-          needs: { what: "the matcha is still in stock and the add succeeded", else: "gone" },
+          needs: {
+            what: "the matcha is still in stock and the add succeeded",
+            else: "gone",
+            stock: ["chiran-premium-ceremonial-matcha-tea"],
+          },
           bot: "adds it, store-scoped and idempotent",
         },
       ],
@@ -264,7 +282,7 @@ export const stillBrowsing: Flow[] = [
     },
   },
   {
-    n: 3,
+    n: 4,
     name: "Viewed, but sold out",
     key: "browse-sold-out",
     signal: "Looked at Kodai Gruyère while it was sold out",
@@ -296,7 +314,11 @@ export const stillBrowsing: Flow[] = [
             "Check out",
             "/checkout",
           ),
-          needs: { what: "the Manchego is still in stock at Vasant Kunj and the add succeeded", else: "gone" },
+          needs: {
+            what: "the Manchego is still in stock at Vasant Kunj and the add succeeded",
+            else: "gone",
+            stock: ["manchego-cheese"],
+          },
           bot: "adds it, store-scoped and idempotent",
         },
       ],
@@ -330,7 +352,7 @@ export const stillBrowsing: Flow[] = [
     },
   },
   {
-    n: 3,
+    n: 4,
     name: "Searched, not stocked",
     key: "browse-search",
     signal: "Searched for yuzu kosho, which isn't stocked",
@@ -385,7 +407,7 @@ export const stillBrowsing: Flow[] = [
     },
   },
   {
-    n: 3,
+    n: 4,
     name: "Browsed a category",
     key: "browse-category",
     signal: "Browsed the bakery without adding anything",
@@ -404,17 +426,17 @@ export const stillBrowsing: Flow[] = [
       text: "Hi Raghav,\n\nHere are three of the newest picks from our bakery at FoodStories Lokhandwala this week, each a single tap from your basket. 🥐\n\nIt's been a little while since your last order, and our bakers would love to bake for you again.",
       cards: [
         {
-          photo: { emoji: "🍞", alt: "Dark Rye sourdough" },
+          photo: catalogPhoto("r/y/prd_13154_2712eb4bf4285101.jpg", "Dark Rye sourdough"),
           text: "*Dark Rye sourdough*\nDense and tangy, and lovely with salted butter.",
           buttons: [{ title: "Add to my basket", next: "rye" }],
         },
         {
-          photo: { emoji: "🥐", alt: "Butter croissants" },
+          photo: catalogPhoto("1/0/1000017268-1_2uf88fz1rhwazevy.jpg", "Butter croissants"),
           text: "*Butter croissants*\nFlaky, golden and properly buttery.",
           buttons: [{ title: "Add to my basket", next: "croissant" }],
         },
         {
-          photo: { emoji: "🥬", alt: "Spinach & Feta babka" },
+          photo: catalogPhoto("s/p/prd_6334_7401af196e930c05.jpg", "Spinach & Feta babka"),
           text: "*Spinach & Feta babka*\nA savoury twist on the classic, for breakfast or tea.",
           buttons: [{ title: "Add to my basket", next: "babka" }],
         },
@@ -424,7 +446,11 @@ export const stillBrowsing: Flow[] = [
       rye: [
         {
           text: "Done ✅ The *Dark Rye sourdough* is in your basket at Lokhandwala.",
-          needs: { what: "the Dark Rye is still in stock at Lokhandwala and the add succeeded", else: "out" },
+          needs: {
+            what: "the Dark Rye is still in stock at Lokhandwala and the add succeeded",
+            else: "out",
+            stock: ["dark-rye-sourdough-1"],
+          },
           bot: "the checkout nudge below goes once per conversation; later taps get “Done ✅ … is in too” and the link",
         },
         expressDelivery,
@@ -432,7 +458,11 @@ export const stillBrowsing: Flow[] = [
       croissant: [
         {
           text: "Done ✅ The *butter croissants* are in your basket at Lokhandwala.",
-          needs: { what: "the croissants are still in stock at Lokhandwala and the add succeeded", else: "out" },
+          needs: {
+            what: "the croissants are still in stock at Lokhandwala and the add succeeded",
+            else: "out",
+            stock: ["a2-butter-croissant"],
+          },
           bot: "nudge once per conversation",
         },
         expressDelivery,
@@ -440,7 +470,11 @@ export const stillBrowsing: Flow[] = [
       babka: [
         {
           text: "Done ✅ The *Spinach & Feta babka* is in your basket at Lokhandwala.",
-          needs: { what: "the babka is still in stock at Lokhandwala and the add succeeded", else: "out" },
+          needs: {
+            what: "the babka is still in stock at Lokhandwala and the add succeeded",
+            else: "out",
+            stock: ["spinach-and-feta-babka"],
+          },
           bot: "nudge once per conversation",
         },
         expressDelivery,
@@ -458,7 +492,7 @@ export const stillBrowsing: Flow[] = [
     },
   },
   {
-    n: 3,
+    n: 4,
     name: "Home page only",
     key: "browse-home",
     signal: "Visited the home page only; fresh produce is what they buy most",
@@ -474,7 +508,7 @@ export const stillBrowsing: Flow[] = [
       "The weakest signal in the segment: it loses to any stronger signal and to the live cart journey",
     ],
     start: {
-      photo: { emoji: "🥑", alt: "Hass avocados and microgreens" },
+      photo: catalogPhoto("h/a/prd_6325_282c09b91fc319b6.jpg", "Hass avocados"),
       text: "Hi Aisha,\n\nFresh *Hass avocados* are in at Banjara Hills, picked for ripeness, along with *microgreens* from our hydroponic range. 🥑\n\nIt's been a little while since your last order, and we'd love to have you back. Shall we add both to your basket?",
       footer: "FoodStories Banjara Hills · Reply STOP to opt out",
       buttons: [
@@ -491,7 +525,11 @@ export const stillBrowsing: Flow[] = [
             "Check out",
             "/checkout",
           ),
-          needs: { what: "both are still in stock at Banjara Hills and both adds succeeded", else: "partial" },
+          needs: {
+            what: "both are still in stock at Banjara Hills and both adds succeeded",
+            else: "partial",
+            stock: ["alfa-alfa-microgreens-from-enlinia-farm-telangana"],
+          },
           bot: "adds both, store-scoped and idempotent",
         },
       ],

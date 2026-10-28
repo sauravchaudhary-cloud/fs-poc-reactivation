@@ -59,8 +59,9 @@ export const storeFor = (nameOrCode = "") => {
 
 // Search skips the catalogue's articles (priced at zero), repeats, and what WhatsApp's commerce rules keep off the
 // platform (alcohol, supplements, infant food). What's in stock comes first; the AI sees six, in the catalogue's order.
+// Search ignores case, so "Burrata" and "burrata" share one cached answer.
 export async function products(query: string, store: string): Promise<Product[]> {
-  const found = await catalogue("$q:String!", "search:$q", { q: query }, store);
+  const found = await catalogue("$q:String!", "search:$q", { q: query.toLowerCase() }, store);
   const sellable = found.filter((item) => price(item) > 0 && !RESTRICTED.test(item.name));
   return sellable
     .filter((item, i) => sellable.findIndex((other) => other.name.trim() === item.name.trim()) === i)
@@ -123,6 +124,7 @@ export async function addToBasket(
     "filter:{url_key:{in:$keys}}",
     { keys: items.map((wanted) => wanted.key) },
     store,
+    true, // stock as it is now, not as Magento cached it
   );
   const lines = items.map((wanted, i) => ({
     ...wanted,
@@ -166,26 +168,45 @@ export async function inStockInstead(names: string[], store: string, skip: strin
     .slice(0, 2);
 }
 
+// A tap-time check that names products (`needs.stock` in lib/bot.ts), by page key: what's in stock at the store now,
+// and what isn't (sold out, or not sold there), by name. Read past Magento's cache, like an add.
+export async function stockAt(keys: string[], store: string) {
+  const found = await catalogue("$keys:[String]", "filter:{url_key:{in:$keys}}", { keys }, store, true);
+  const item = (key: string) => found.find((f) => f.url_key === key);
+  const name = (key: string) => item(key)?.name.trim() ?? key.replace(/-/g, " ");
+  const inStockNow = (key: string) => !!item(key) && inStock(item(key)!);
+  return { inStock: keys.filter(inStockNow).map(name), out: keys.filter((key) => !inStockNow(key)).map(name) };
+}
+
 export const customer = async (phone: string): Promise<Customer | undefined> =>
   live() ? api<Customer>(`/customers/${phone}`) : undefined;
 
 // The site's public catalogue (Magento GraphQL, scoped to the store's view): `variableDefs` declares the query's
-// variables, `args` picks the products, 20 at most.
+// variables, `args` picks the products, 20 at most. A read is a GET, which Magento answers from its cache, keyed by
+// store (~0.2 s, against ~0.6 s for a POST); `fresh` posts instead, past the cache.
 async function catalogue(
   variableDefs: string,
   args: string,
   variables: Record<string, unknown>,
   store: string,
+  fresh = false,
 ): Promise<Item[]> {
-  const res = await fetch(GRAPHQL, {
-    method: "POST",
-    headers: { "content-type": "application/json", store: storeFor(store).code },
-    body: JSON.stringify({
-      query: `query(${variableDefs}){products(${args},pageSize:20){items{__typename sku name url_key stock_status price_range{minimum_price{final_price{value}}} small_image{url}}}}`,
-      variables,
-    }),
-    signal: AbortSignal.timeout(6000),
-  });
+  const query = `query(${variableDefs}){products(${args},pageSize:20){items{__typename sku name url_key stock_status price_range{minimum_price{final_price{value}}} small_image{url}}}}`;
+  const scope = { store: storeFor(store).code };
+  const signal = AbortSignal.timeout(6000);
+  let res: Response;
+  if (fresh) {
+    const body = JSON.stringify({ query, variables });
+    res = await fetch(GRAPHQL, {
+      method: "POST",
+      headers: { ...scope, "content-type": "application/json" },
+      body,
+      signal,
+    });
+  } else {
+    const params = new URLSearchParams({ query, variables: JSON.stringify(variables) });
+    res = await fetch(`${GRAPHQL}?${params}`, { headers: scope, signal });
+  }
   const body = await res.json();
   if (!res.ok || !body.data)
     throw new Error(`catalogue ${res.status}: ${JSON.stringify(body.errors ?? "").slice(0, 120)}`);

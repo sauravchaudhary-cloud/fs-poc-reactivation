@@ -16,8 +16,7 @@ export type AnthropicApiCall = {
   durationMs: number;
   speedTokPerSec: number;
   tokens: { input: number; output: number; cacheRead: number; cacheWrite: number; total: number };
-  cost: number;
-  costFormatted: string;
+  cost: number; // US dollars
   stopReason: string;
   tools: string[];
   status: "success" | "error";
@@ -165,7 +164,22 @@ export function replyNote(answer: Extract<Answer, { kind: "say" | "handoff" }>, 
 export const unsentNote = (why?: string) =>
   why === "off" ? undefined : `The AI's answer wasn't sent (${why ?? "no response"}), so the rules answered.`;
 
-const dollars = (n: number) => "$" + (n < 0.01 ? n.toFixed(5) : n.toFixed(4));
+// What a tap's stock check found (`needs.stock`), live from the catalogue: app/api/chat's answer, null if it failed.
+export type StockCheck = { inStock?: string[]; out?: string[]; store?: string };
+export function stockNote(found: StockCheck | null) {
+  if (!found?.store) return "The live stock check didn't answer, so the flow plays on.";
+  if (found.out?.length)
+    return `Checked live at ${found.store}: ${found.out.join(", ")} sold out, so the fallback plays.`;
+  return `Checked live at ${found.store}: ${found.inStock?.join(", ")} in stock, so the flow plays on.`;
+}
+
+// The API bills in US dollars; the log shows rupees. ponytail: a fixed rate, close enough for amounts this small.
+const RUPEES_PER_DOLLAR = 88;
+function rupees(dollars: number) {
+  const amount = dollars * RUPEES_PER_DOLLAR;
+  if (!amount) return "₹0";
+  return amount < 0.001 ? "<₹0.001" : `₹${amount.toFixed(amount < 1 ? 3 : 2)}`;
+}
 // Who handled a card, and the colours of its badge.
 const BADGE = {
   logic: { label: "Internal logic", className: "bg-slate-100 text-slate-700" },
@@ -185,15 +199,16 @@ function usage(trace: Trace) {
   const cost =
     trace.cost === undefined
       ? "price unknown"
-      : dollars(trace.cost) + (trace.free ? " at list price; the free tier bills $0" : "");
+      : rupees(trace.cost) + (trace.free ? " at list price; the free tier bills nothing" : "");
   return `${calls} · ${tokens}${speed} · ${cost}`;
 }
 
-type InspectorProps = { log: Entry[]; open: boolean | null; setOpen: (open: boolean) => void };
+// `dev` (?dev in the URL) shows the log file and Clear logs, kept out of a presentation.
+type InspectorProps = { log: Entry[]; open: boolean | null; setOpen: (open: boolean) => void; dev: boolean };
 
 // A collapsible panel on the right: one card per tap or message, saying whether it went to the AI and what that cost.
 // Includes a dedicated Anthropic API Tracker tab for tracking all Anthropic API calls, timings, speeds and costs.
-export function Inspector({ log, open, setOpen }: InspectorProps) {
+export function Inspector({ log, open, setOpen, dev }: InspectorProps) {
   const end = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<"chat" | "anthropic">("chat");
   const [anthropicData, setAnthropicData] = useState<{ calls: AnthropicApiCall[]; stats: AnthropicStats } | null>(null);
@@ -296,7 +311,7 @@ export function Inspector({ log, open, setOpen }: InspectorProps) {
               }`}
             >
               <span className="size-2 rounded-full bg-[#da7756]" />
-              Anthropic API {anthropicData?.stats.totalCalls ? `(${anthropicData.stats.totalCalls})` : ""}
+              Anthropic API{anthropicData?.stats.totalCalls ? ` · ${anthropicData.stats.totalCalls} calls` : ""}
             </button>
           </div>
         </header>
@@ -305,7 +320,7 @@ export function Inspector({ log, open, setOpen }: InspectorProps) {
           <div className="flex-1 flex flex-col min-h-0">
             <div className="border-b border-black/5 bg-[#fcfdfe] px-4 py-2 text-xs text-[#667781]">
               {byLogic} by internal logic · {sentToAI.length} sent to AI ({calls} model calls, {tokens.toLocaleString()}{" "}
-              tokens, {dollars(cost)})
+              tokens, {rupees(cost)})
             </div>
             <ol className="flex-1 space-y-3 overflow-y-auto p-4">
               {!log.length && (
@@ -326,9 +341,9 @@ export function Inspector({ log, open, setOpen }: InspectorProps) {
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-lg bg-[#fff8f5] p-2.5 ring-1 ring-[#da7756]/20">
                   <p className="text-[10px] font-semibold uppercase text-[#da7756]">Total API Cost</p>
-                  <p className="text-base font-bold text-[#111b21]">{dollars(anthropicData?.stats.totalCost ?? 0)}</p>
+                  <p className="text-base font-bold text-[#111b21]">{rupees(anthropicData?.stats.totalCost ?? 0)}</p>
                   <p className="text-[10px] text-[#8696a0]">
-                    {(anthropicData?.stats.totalTokens ?? 0).toLocaleString()} tokens billed
+                    {(anthropicData?.stats.totalTokens ?? 0).toLocaleString()} tokens · ₹{RUPEES_PER_DOLLAR} to the $
                   </p>
                 </div>
                 <div className="rounded-lg bg-[#f5f9ff] p-2.5 ring-1 ring-[#0066cc]/20">
@@ -341,7 +356,7 @@ export function Inspector({ log, open, setOpen }: InspectorProps) {
               </div>
               <div className="flex items-center justify-between pt-1">
                 <div className="flex items-center gap-1.5 text-[11px] text-[#8696a0]">
-                  <span>📁 logs/anthropic_api.log</span>
+                  {dev && <span>📁 logs/anthropic_api.log</span>}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -351,10 +366,17 @@ export function Inspector({ log, open, setOpen }: InspectorProps) {
                   >
                     {loadingLogs ? "Refreshing..." : "↻ Refresh"}
                   </button>
-                  <span className="text-black/10">|</span>
-                  <button onClick={handleClearLogs} className="text-[11px] font-medium text-rose-600 hover:underline">
-                    Clear logs
-                  </button>
+                  {dev && (
+                    <>
+                      <span className="text-black/10">|</span>
+                      <button
+                        onClick={handleClearLogs}
+                        className="text-[11px] font-medium text-rose-600 hover:underline"
+                      >
+                        Clear logs
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -364,10 +386,7 @@ export function Inspector({ log, open, setOpen }: InspectorProps) {
               {!anthropicData?.calls || anthropicData.calls.length === 0 ? (
                 <div className="py-8 text-center text-xs text-[#8696a0]">
                   <p className="font-medium text-[#111b21]">No Anthropic calls recorded yet</p>
-                  <p className="mt-1">
-                    Select Anthropic in the About panel and send a message in the chat to see real-time cost, timings
-                    and speed.
-                  </p>
+                  <p className="mt-1">Type a message in the chat to see each AI call&apos;s cost, timing and speed.</p>
                 </div>
               ) : (
                 anthropicData.calls.map((call) => <AnthropicCallCard key={call.id} call={call} />)
@@ -408,7 +427,7 @@ function AnthropicCallCard({ call }: { call: AnthropicApiCall }) {
         </div>
         <div>
           <span className="block text-[10px] text-[#8696a0]">Cost</span>
-          <span className="font-semibold text-[#da7756] tabular-nums">{call.costFormatted}</span>
+          <span className="font-semibold text-[#da7756] tabular-nums">{rupees(call.cost)}</span>
         </div>
       </div>
 
@@ -484,7 +503,7 @@ function TraceDetails({ trace }: { trace: Trace }) {
             <span className="text-[#8696a0]">
               {" "}
               · {(call.ms / 1000).toFixed(1)} s{call.speed ? ` (${call.speed} tok/s)` : ""}
-              {call.cost !== undefined ? ` · ${dollars(call.cost)}` : ""}
+              {call.cost !== undefined ? ` · ${rupees(call.cost)}` : ""}
               {" · "}
               {call.tokens.input.toLocaleString()} in / {call.tokens.output.toLocaleString()} out
               {call.tokens.cacheRead ? ` (${call.tokens.cacheRead.toLocaleString()} cached)` : ""}

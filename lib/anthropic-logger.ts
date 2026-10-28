@@ -43,8 +43,9 @@ export const ANTHROPIC_PRICING: [RegExp, PerMillion][] = [
   [/haiku/, [1, 5, 0.1, 1.25]],
   [/sonnet-5[-.]5/, [2, 10, 0.2, 2.5]],
   [/sonnet/, [3, 15, 0.3, 3.75]],
+  [/opus-5[-.]5/, [4, 20, 0.2, 5]],
   [/opus/, [15, 75, 1.5, 18.75]],
-  [/fable/, [3, 15, 0.3, 3.75]],
+  [/fable/, [10, 50, 0.25, 12.5]],
 ];
 
 // Calculate US dollars for tokens based on model name.

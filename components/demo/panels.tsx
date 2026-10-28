@@ -1,18 +1,19 @@
 // The panels around the phone: the segments and their conversations (a row on phones, a list on laptops), and what's
-// behind the open conversation, with the Stress test switch.
+// behind the open conversation, with the Stress test switch and, while presenting, the presenter's path.
 import Link from "next/link";
 import { flows, segments, sendGates } from "@/content/flows";
+import { tour } from "@/content/tour";
 import type { Segment } from "@/lib/bot";
 import { Icon } from "./icons";
 
 // One accent per deck segment, so each is recognisable at a glance.
 const TONE: Record<number, { soft: string; solid: string }> = {
-  1: { soft: "bg-violet-100 text-violet-700", solid: "bg-violet-600 text-white" },
-  2: { soft: "bg-amber-100 text-amber-800", solid: "bg-amber-500 text-white" },
-  3: { soft: "bg-sky-100 text-sky-700", solid: "bg-sky-600 text-white" },
-  4: { soft: "bg-emerald-100 text-emerald-700", solid: "bg-emerald-600 text-white" },
+  1: { soft: "bg-rose-100 text-rose-700", solid: "bg-rose-600 text-white" },
+  2: { soft: "bg-violet-100 text-violet-700", solid: "bg-violet-600 text-white" },
+  3: { soft: "bg-amber-100 text-amber-800", solid: "bg-amber-500 text-white" },
+  4: { soft: "bg-sky-100 text-sky-700", solid: "bg-sky-600 text-white" },
   5: { soft: "bg-indigo-100 text-indigo-700", solid: "bg-indigo-600 text-white" },
-  6: { soft: "bg-rose-100 text-rose-700", solid: "bg-rose-600 text-white" },
+  6: { soft: "bg-emerald-100 text-emerald-700", solid: "bg-emerald-600 text-white" },
 };
 
 const PRIORITY: Record<string, string> = {
@@ -101,18 +102,26 @@ const ANTHROPIC_MODELS = [
 ];
 
 // Laptops and up: the six segments, with the chosen one opened to show its sub-segments.
-export function SegmentNav({ flowIdx, restart }: PanelProps) {
+export function SegmentNav({ flowIdx, restart, present }: PanelProps & { present: () => void }) {
   const chosen = segmentOf(flowIdx);
   return (
     <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
       <div className="flex items-center justify-between gap-2">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-[#008069]">FoodStories · reactivation</p>
-        <Link
-          href="/dashboard"
-          className="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium text-[#008069] ring-1 ring-[#008069]/30 hover:bg-[#d9fdd3]"
-        >
-          Dashboard →
-        </Link>
+        <div className="flex shrink-0 gap-1.5">
+          <button
+            onClick={present}
+            className="rounded-full bg-[#1c3b2e] px-2.5 py-1 text-xs font-medium text-[#f5e9d3] hover:bg-[#1c3b2e]/90"
+          >
+            ▶ Present
+          </button>
+          <Link
+            href="/dashboard"
+            className="rounded-full px-2.5 py-1 text-xs font-medium text-[#008069] ring-1 ring-[#008069]/30 hover:bg-[#d9fdd3]"
+          >
+            Dashboard →
+          </Link>
+        </div>
       </div>
       <h1 className="mt-0.5 text-lg font-semibold leading-snug">WhatsApp conversations</h1>
       <p className="mt-1 text-xs leading-relaxed text-[#667781]">
@@ -182,7 +191,8 @@ function SegmentRow({ segment, open, flowIdx, restart }: PanelProps & { segment:
 }
 
 // The open conversation: its segment, the behaviour and category it's built on, the presenter notes, what CleverTap
-// checks before it goes, and the Stress test switch.
+// checks before it goes, the Stress test switch and the AI model picker; while presenting, the presenter's stop above
+// it all.
 export function About({
   flowIdx,
   restart,
@@ -192,11 +202,14 @@ export function About({
   setAiProvider,
   aiModel,
   setAiModel,
-}: PanelProps & StressProps & ProviderProps) {
+  tourAt,
+  present,
+}: PanelProps & StressProps & ProviderProps & { tourAt: number | null; present: (at: number | null) => void }) {
   const flow = flows[flowIdx];
   const segment = segmentOf(flowIdx);
   return (
     <section aria-label="About this conversation" className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+      {tourAt !== null && <PresenterStop at={tourAt} present={present} />}
       <div className="flex items-center justify-between">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-[#8696a0]">About this conversation</p>
         <button
@@ -276,61 +289,113 @@ export function About({
         <span>
           <b>Stress test.</b> Play what happens when the bot&apos;s check fails (sold out, slot filled, cut-off passed),
           and show what the bot does at each step. Products the AI adds to the basket sell out mid-add too: one product
-          sells out entirely, and of two, the first does. In the live bot these checks pass until the stock and slot
-          services are wired in.
+          sells out entirely, and of two, the first does. Without it, a check that names a product reads its stock live
+          from foodstories.shop; slot and cut-off checks pass until those services are wired in.
         </span>
       </label>
-      <div className="mt-4 rounded-xl bg-[#f0f8ff] p-3 ring-1 ring-[#008069]/20">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-[#008069]">AI Provider</p>
-        <div className="mt-2 flex gap-2">
-          <button
-            onClick={() => setAiProvider("gemini")}
-            className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-              aiProvider === "gemini"
-                ? "bg-[#008069] text-white shadow-sm"
-                : "bg-white text-[#3b4a54] ring-1 ring-black/10 hover:bg-[#f5f7f8]"
-            }`}
-          >
-            Gemini
-          </button>
-          <button
-            onClick={() => setAiProvider("anthropic")}
-            className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
-              aiProvider === "anthropic"
-                ? "bg-[#da7756] text-white shadow-sm"
-                : "bg-white text-[#3b4a54] ring-1 ring-black/10 hover:bg-[#f5f7f8]"
-            }`}
-          >
-            Anthropic
-          </button>
-        </div>
-        {aiProvider === "anthropic" && (
-          <div className="mt-3">
-            <p className="text-[11px] font-semibold text-[#8696a0]">Model</p>
-            <div className="mt-1.5 grid grid-cols-2 gap-1.5">
-              {ANTHROPIC_MODELS.map((m) => (
-                <button
-                  key={m.key}
-                  onClick={() => setAiModel(m.key)}
-                  className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
-                    aiModel === m.key
-                      ? "bg-[#da7756] text-white shadow-sm"
-                      : "bg-white text-[#3b4a54] ring-1 ring-black/10 hover:bg-[#f5f7f8]"
-                  }`}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-[10px] leading-snug text-[#8696a0]">
-              All models run in low-effort mode. Needs ANTHROPIC_API_KEY in .env.local.
-            </p>
-          </div>
-        )}
-      </div>
+      <ProviderPicker {...{ aiProvider, setAiProvider, aiModel, setAiModel }} />
       <p className="mt-5 border-t border-black/5 pt-3 text-[11px] leading-relaxed text-[#8696a0]">
-        Products, hampers, prices and stores are from foodstories.shop. People and photos are placeholders.
+        Products, photos, prices and stores are from foodstories.shop. People are placeholders.
       </p>
     </section>
+  );
+}
+
+// While presenting: the stop on the presenter's path (content/tour.ts), what to show there, and the way on.
+function PresenterStop({ at, present }: { at: number; present: (at: number | null) => void }) {
+  const stop = tour[at];
+  return (
+    <div className="mb-5 rounded-xl bg-[#1c3b2e] p-4 text-[#f5e9d3] shadow-sm">
+      <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[#f5e9d3]/70">
+        <span>
+          Presenting · {at + 1} of {tour.length}
+        </span>
+        <button
+          onClick={() => present(null)}
+          aria-label="Stop presenting"
+          className="rounded-full px-1.5 text-base leading-none hover:bg-white/10"
+        >
+          ×
+        </button>
+      </div>
+      <p className="mt-1.5 font-semibold leading-snug">{stop.title}</p>
+      <p className="mt-1.5 text-[13px] leading-relaxed text-[#f5e9d3]/90">{stop.say}</p>
+      <div className="mt-3 flex items-center gap-2 text-xs font-medium">
+        <button
+          onClick={() => present(at - 1)}
+          disabled={!at}
+          className="whitespace-nowrap rounded-full px-3 py-1.5 ring-1 ring-[#f5e9d3]/30 hover:bg-white/10 disabled:opacity-40"
+        >
+          ← Back
+        </button>
+        {at < tour.length - 1 ? (
+          <button
+            onClick={() => present(at + 1)}
+            className="whitespace-nowrap rounded-full bg-[#f5e9d3] px-3 py-1.5 text-[#1c3b2e]"
+          >
+            Next →
+          </button>
+        ) : (
+          <Link href="/dashboard-v2" className="whitespace-nowrap rounded-full bg-[#f5e9d3] px-3 py-1.5 text-[#1c3b2e]">
+            Dashboard →
+          </Link>
+        )}
+        <span className="ml-auto whitespace-nowrap text-[11px] text-[#f5e9d3]/60">← → keys</span>
+      </div>
+    </div>
+  );
+}
+
+// Which model answers typed text: Claude by default, Gemini's free tier for testing.
+function ProviderPicker({ aiProvider, setAiProvider, aiModel, setAiModel }: ProviderProps) {
+  return (
+    <div className="mt-4 rounded-xl bg-[#f0f8ff] p-3 ring-1 ring-[#008069]/20">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-[#008069]">AI Provider</p>
+      <div className="mt-2 flex gap-2">
+        <button
+          onClick={() => setAiProvider("gemini")}
+          className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+            aiProvider === "gemini"
+              ? "bg-[#008069] text-white shadow-sm"
+              : "bg-white text-[#3b4a54] ring-1 ring-black/10 hover:bg-[#f5f7f8]"
+          }`}
+        >
+          Gemini
+        </button>
+        <button
+          onClick={() => setAiProvider("anthropic")}
+          className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+            aiProvider === "anthropic"
+              ? "bg-[#da7756] text-white shadow-sm"
+              : "bg-white text-[#3b4a54] ring-1 ring-black/10 hover:bg-[#f5f7f8]"
+          }`}
+        >
+          Anthropic
+        </button>
+      </div>
+      {aiProvider === "anthropic" && (
+        <div className="mt-3">
+          <p className="text-[11px] font-semibold text-[#8696a0]">Model</p>
+          <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+            {ANTHROPIC_MODELS.map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setAiModel(m.key)}
+                className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all ${
+                  aiModel === m.key
+                    ? "bg-[#da7756] text-white shadow-sm"
+                    : "bg-white text-[#3b4a54] ring-1 ring-black/10 hover:bg-[#f5f7f8]"
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[10px] leading-snug text-[#8696a0]">
+            All models run in low-effort mode. Needs ANTHROPIC_API_KEY in .env.local.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }

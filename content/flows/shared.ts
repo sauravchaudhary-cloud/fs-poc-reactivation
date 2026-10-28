@@ -1,13 +1,19 @@
 // Shared pieces of copy, so the same promise reads the same way in every conversation. Each segment's file imports
 // what it uses.
-import type { Msg, Option } from "../../lib/bot.ts";
+import type { Msg, Option, Photo } from "../../lib/bot.ts";
 
 const SITE = "https://foodstories.shop";
+
+// A product's own photo from the catalogue, by its path on foodstories.shop's image CDN.
+export const catalogPhoto = (path: string, alt: string): Photo => ({
+  url: "https://d3lhyaytnudnz3.cloudfront.net/fs_/media/catalog/product/" + path,
+  alt,
+});
 
 // Every path ends here: a deep link into the site. The bot appends a signed token (customer, store, items to add).
 // A link can be opened days later, so the basket page itself shows live stock for their store, greys out anything that
 // has sold out since, and suggests the closest item; and the bot sends a /basket link only when the basket has
-// something in stock to show, otherwise the flow's aisle (1.1 shows the pattern).
+// something in stock to show, otherwise the flow's aisle (2.1 shows the pattern).
 export const basket = (text: string, label = "Open my basket", path = "/basket"): Msg => ({
   text,
   link: { label, url: SITE + path },

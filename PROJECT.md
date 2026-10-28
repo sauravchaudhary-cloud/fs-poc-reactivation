@@ -16,7 +16,7 @@ This repository (`~/projects/v2`) has two parts:
 The core principle: **every promise in a message must be true when the customer taps.** Nothing is "kept aside", "in your basket" or "booked" unless a system checks it or does it. Stock is never forecast. Nothing is given away free.
 
 ### The sibling spec repo
-`~/projects/foodstories-reactivation/` holds the earlier prototype and `PROTOTYPE_SPEC.md`. Section 5 of that file lists the deck's rules: segments, overlays, guardrails, copy lint and category playbooks. v2 renumbers the segments (1 = Lapsed VIPs … 6 = Service-bruised) and drops relationship managers.
+`~/projects/foodstories-reactivation/` holds the earlier prototype and `PROTOTYPE_SPEC.md`. Section 5 of that file lists the deck's rules: segments, overlays, guardrails, copy lint and category playbooks. v2 keeps the spec's segment order (1 = Service-bruised) except that quiet regulars (5) come before one-time buyers (6), and drops relationship managers.
 
 ---
 
@@ -48,33 +48,40 @@ Segments are computed in CleverTap from behaviour. What a customer receives is d
 
 | # | Segment | Priority | Who |
 |---|---|---|---|
-| 1 | Lapsed VIPs | P0 | A VIP with no purchase in 30+ days |
-| 2 | Past gift buyers | P1 | Inactive, and has bought a gift hamper at least once, browsed the gift section in the last 30 days, or ordered corporate gifts; only in the 21 days before an occasion |
-| 3 | Inactive, still browsing | P1 | No purchase in 30+ days, but visited the app or site in the last 30 days |
-| 4 | One-time buyers | P2 | Bought once, nothing since, no recent visit |
+| 1 | Service-bruised | P0 | Inactive, and their last order went wrong; day 31–90 after that order |
+| 2 | Lapsed VIPs | P0 | A VIP with no purchase in 30+ days |
+| 3 | Past gift buyers | P1 | Inactive, and has bought a gift hamper at least once, browsed the gift section in the last 30 days, or ordered corporate gifts; only in the 21 days before an occasion |
+| 4 | Inactive, still browsing | P1 | No purchase in 30+ days, but visited the app or site in the last 30 days |
 | 5 | Quiet regulars | P1 | 2+ orders, no purchase and no visit in 30+ days |
-| 6 | Service-bruised | P0 | Inactive, and their last order went wrong; day 31–90 after that order |
+| 6 | One-time buyers | P2 | Bought once, nothing since, no recent visit |
 
 ### All 24 flows
 
 Each flow has a **stable key** that never changes once a template has gone out, because every button payload carries it.
 
-**Segment 1: Lapsed VIPs**
+**Segment 1: Service-bruised**
+| Flow | Key | Trigger and idea |
+|---|---|---|
+| Cancelled it themselves | `bruised-cancelled` | Asks rather than apologises. "I changed my mind" moves them back to their usual segment. Utility template with a marketing twin. |
+| Payment didn't go through | `bruised-payment` | The biggest group (~1,100). Includes the order number so it doesn't read like phishing. "My money isn't back" goes to care. Never asks for card or UPI details. |
+| Delivery failed | `bruised-delivery` | States the refund first. Blames no one. Fixes by cause: nobody came (ticket), not home (easier slot), address trouble (map pin). |
+
+**Segment 2: Lapsed VIPs**
 | Flow | Key | Trigger and idea |
 |---|---|---|
 | Day 30 · their usual, kept aside | `vip-kept-aside` | Signature item (burrata) set aside under their name until a deadline. Send it, pick it up, or decline. A pre-send job allocates stock per store, sends are capped at 30% of stock, and untapped holds are released at 8 pm. The store gets a POS hold list. |
 | Day 60 · first pick of a new drop | `vip-new-drop` | First pick of a small-batch single-origin coffee before it reaches the shelf. At most one coffee drop a month. |
 | Day 64 · their usual, ready to go | `vip-usual-basket` | Usual Saturday basket rebuilt from 6 months of orders. Only in-stock items are named; the message is skipped if fewer than 3 survive. |
-| Day 70 · Diwali, two days early | `vip-diwali-early` | Early access to hampers, "same as last year" in one tap. Falls back to a concierge call if last year's list can't be rebuilt. |
+| Day 70 · festive hampers, two days early | `vip-diwali-early` | Early access to the season's hampers (Christmas and New Year in the demo), "same as last year" in one tap. Falls back to a concierge call if last year's list can't be rebuilt. |
 
-**Segment 2: Past gift buyers**
+**Segment 3: Past gift buyers**
 | Flow | Key | Trigger and idea |
 |---|---|---|
-| Bought a gift hamper at least once | `gift-diwali-list` | Anyone who has ever bought a gift hamper, in any year. Start from their last gift list, with a firm order-by date. Names and addresses never appear in chat. The email on file is offered first. Before Christmas the same conversation goes out as "season's greetings", with no alcohol. |
+| Bought a gift hamper at least once | `gift-diwali-list` | Anyone who has ever bought a gift hamper, in any year. Start from their last gift list for the next occasion that can still be delivered (Christmas and New Year in the demo; Diwali when the calendar allows), with a firm order-by date. Names and addresses never appear in chat. The email on file is offered first. Worded as "season's greetings", with no alcohol. |
 | Browsed gifts in the last 30 days | `browse-gifts` | Viewed the gift section but never bought a hamper (buyers get the flow above). Hampers in their price band. 10 or more go to the concierge, because the site caps orders at 10 hampers. |
-| Corporate gifting | `gift-diwali-corporate` | 60-hamper corporate buyer, handled by the gifting concierge: GST invoice, co-branded cards, address list due by a deadline. The spreadsheet arrives as a document and the bot files it (`received` node). |
+| Corporate gifting | `gift-diwali-corporate` | 60-hamper corporate buyer, handled by the gifting concierge: GST invoice, co-branded cards, address list due by a deadline (11 Dec for Christmas delivery in the demo). The spreadsheet arrives as a document and the bot files it (`received` node). |
 
-**Segment 3: Inactive, still browsing** (sent only after the 72 hours the cart journeys own)
+**Segment 4: Inactive, still browsing** (sent only after the 72 hours the cart journeys own)
 | Flow | Key | Trigger and idea |
 |---|---|---|
 | Reached checkout | `browse-checkout` | Blocked at checkout by a full slot. Offers 60-minute delivery or pickup. The variant depends on the blocker. |
@@ -85,27 +92,20 @@ Each flow has a **stable key** that never changes once a template has gone out, 
 | Browsed a category | `browse-category` | Carousel of three newest in-stock picks. A three-button fallback covers old clients. |
 | Home page only | `browse-home` | The weakest signal: what's new in their top category. "Not now" adds nothing. |
 
-**Segment 4: One-time buyers**
-| Flow | Key | Trigger and idea |
-|---|---|---|
-| Day 31 · feedback first | `once-feedback-first` | From "Meher Sethi, Head of Guest Experience" (a fictional placeholder; the real person in that role signs at launch): "How was your first order?" Utility template. Each reply gets a real answer; complaints go to care. |
-| Day 31 · basket first | `once-basket-first` | The other arm of the A/B test: a second basket first, then feedback. Marketing template. |
-| After the feast | `once-after-feast` | The week after Diwali (9–15 Nov): a light, fresh basket. Also goes to quiet regulars. |
-
 **Segment 5: Quiet regulars**
 | Flow | Key | Trigger and idea |
 |---|---|---|
 | Day 31–60 · new arrivals | `regular-new-arrivals` | Carousel of the newest Cheese Cellar arrivals. A standing-order pitch comes only after interest, and only once. |
 | Day 61–180 · what went wrong? | `regular-what-went-wrong` | A senior, personal voice (the Head of Guest Experience) asks why, and says what's changed (new app, live delivery updates). Branches: wrong, busy, moved (city list leads to a store switch or gifting only), price (noted, never discounted). 200-person pilot first. |
 | Day 61–180 · their usual day | `regular-usual-day` | A gentle welcome-back from the bakers, then their Saturday sourdough at the door by 9. Offers a weekly reminder. Sends are capped at 3× slot capacity. |
-| Diwali · hosting | `regular-diwali-hosting` | A hosting pattern before festivals: platters and a pre-Diwali delivery day. Tested against "what changed". |
+| Festive hosting | `regular-diwali-hosting` | A hosting pattern before festivals: platters and a delivery day before Christmas Eve or New Year's Eve. Tested against "what changed". |
 
-**Segment 6: Service-bruised**
+**Segment 6: One-time buyers**
 | Flow | Key | Trigger and idea |
 |---|---|---|
-| Cancelled it themselves | `bruised-cancelled` | Asks rather than apologises. "I changed my mind" moves them back to their usual segment. Utility template with a marketing twin. |
-| Payment didn't go through | `bruised-payment` | The biggest group (~1,100). Includes the order number so it doesn't read like phishing. "My money isn't back" goes to care. Never asks for card or UPI details. |
-| Delivery failed | `bruised-delivery` | States the refund first. Blames no one. Fixes by cause: nobody came (ticket), not home (easier slot), address trouble (map pin). |
+| Day 31 · feedback first | `once-feedback-first` | From "Meher Sethi, Head of Guest Experience" (a fictional placeholder; the real person in that role signs at launch): "How was your first order?" Utility template. Each reply gets a real answer; complaints go to care. |
+| Day 31 · basket first | `once-basket-first` | The other arm of the A/B test: a second basket first, then feedback. Marketing template. |
+| After the feast | `once-after-feast` | The week after Diwali (9–15 Nov): a light, fresh basket. Also goes to quiet regulars. |
 
 ### What each flow carries
 - **`who`**: when it goes, who it's from (their store, Meher Sethi, the fictional Head of Guest Experience, or the gifting concierge), and whether it's a marketing or utility template.
@@ -204,7 +204,7 @@ customer ──tap / text / photo──▶ Gupshup ──webhook──▶ /api/w
 ### CleverTap integration
 - **Events:** WA Reply, WA AI Reply, WA Handoff, WA Opt Out, WA Opt In, WA Wrong Number, WA Escalation, WA Send Failed, WA Callback Requested, WA Care Ticket, WA Slot Feedback, WA Store Change, WA Reminder Set, WA Basket Add.
 - **Profile properties** (each with a type and expiry; the check script rejects any other name): `care_hold_until`, `wa_snooze_until`, `standing_declined_until`, `gifting_declined_until`, `corporate_gifting_declined_until`, `marketing_cadence`, `reminder_cadence`, `reminder_day`, `tea_alerts`, `tea_alert_last_sent`, `back_in_stock_alert`, `cart_nudge_suppressed`, `last_coffee_drop_at`, `reserved_until`, `usual_basket_reask_on`, `segment_exit`, `address_check`, `corporate_sheet_received`.
-- **Utility templates to get approved:** `weekly_basket`, `care_reply`, `back_in_stock` (only with a stock feed), "running late", the sheet reminder, and a marketing twin of 6.1.
+- **Utility templates to get approved:** `weekly_basket`, `care_reply`, `back_in_stock` (only with a stock feed), "running late", the sheet reminder, and a marketing twin of 1.1.
 - **Identity:** `+` followed by the phone number, in one function. The scheme is still to be confirmed with a `dryRun=1` upload.
 - A goal on `WA Reply` exits the journey.
 
@@ -243,14 +243,12 @@ To answer what the rules can't settle: product and stock questions, the basket, 
 The customer's first name, their store, the IST time, the last dozen messages of this chat (kept for a day), the open options, and tool results. **Never the phone number.** Phone, OTP, card, PAN and order numbers, emails and UPI ids are masked before reaching the model (DPDP and SPDI minimisation). The customer's text is fenced, and its angle brackets are escaped so it can't forge system notes.
 
 ### Guardrails on output (`vet`)
-Every AI reply must pass these checks or it isn't sent. The model gets one retry, told which rule it broke; after that the rules answer. Blocked:
-- banned deck words
+Every AI reply must pass these checks or it isn't sent. The model gets one retry, told which rule it broke; after that the rules answer. On 28 Oct the prototype stopped blocking copy style (the words "team" and "tracking", label words like "pure" or "organic", care timing like "shortly"), offers that wait on the customer's answer ("tell me the items and I'll check them") and polite Hindi's "करेंगे"; the prompt still asks for all of it, and a launch adds its own guardrails. Blocked:
+- watching language ("we noticed", "you viewed")
 - stock forecasts or restock dates
 - deals (%, free, codes, "on the house", Hindi/Hinglish forms)
 - health claims
 - false urgency
-- care timing ("right away", "jaldi")
-- label claims the product data doesn't make ("pure", "100%", "organic")
 - alcohol
 - claimed or promised actions nobody takes ("I've added", "I'll call", "won't message you", "bhej denge")
 - links off foodstories.shop
@@ -285,10 +283,11 @@ The first AI answer in each chat carries "*Automated assistant · prices and sto
 - **Left:** the six segments and their flows, colour-coded per segment.
 - **Centre:** a WhatsApp-style phone. Tap buttons, open list sheets, swipe carousels, type messages. The demo clock starts at 10:30 am IST.
 - **"About this conversation"** shows the signal, category, who it's from, presenter notes and gates.
-- **Stress test toggle** plays the fallbacks: sold out, slot filled, cut-off passed, and products selling out while the AI adds them. It also shows the bot's notes (yellow) under each message.
-- **Message log (right)** shows, for each tap or message, whether internal logic or the AI handled it, which tools were called, tokens, latency, cost, and why it fell back.
+- **▶ Present** walks a seven-stop path for a pitch (`content/tour.ts`): each stop opens its conversation, says what to show, and types any question to send. Arrow keys or a clicker move along it; Escape ends it. `/?flow=2.1` (or a flow key) opens one conversation directly; `/?dev` adds the log's Clear logs.
+- **Stress test toggle** plays the fallbacks: sold out, slot filled, cut-off passed, and products selling out while the AI adds them. It also shows the bot's notes (yellow) under each message. Without it, a tap-time check that names products (`needs.stock`) reads their stock live from the catalogue at the flow's store, and the log says what it found.
+- **Message log (right)** shows, for each tap or message, whether internal logic or the AI handled it, which tools were called, tokens, latency, cost (in rupees, at ₹88 to the dollar), and why it fell back.
 - Typed messages go to the real AI when a key is set, and are read by the same rules as production.
-- Products, prices and stores are real (foodstories.shop, Oct 2026). People's names are placeholders. Photos are emoji placeholders, except AI product cards, which use the real catalogue images.
+- Products, prices and stores are real (foodstories.shop, Oct 2026). People's names are placeholders. Photos are the catalogue's own product images.
 
 ---
 
@@ -315,7 +314,7 @@ The first AI answer in each chat carries "*Automated assistant · prices and sto
 ## 9. Current status (as of 21 Oct 2026)
 
 ### Working
-- All flows written, pressure-tested and rewritten (19 Oct). On 21 Oct segment 2 was regrouped into bought a gift hamper at least once (any year), browsed gifts in the last 30 days (moved from segment 3) and corporate gifting; Christmas became a note on 2.1, leaving 24 flows.
+- All flows written, pressure-tested and rewritten (19 Oct). On 21 Oct past gift buyers were regrouped into bought a gift hamper at least once (any year), browsed gifts in the last 30 days (moved from still browsing) and corporate gifting; Christmas became a note on 3.1, leaving 24 flows. On 27 Oct the segments were renumbered: service-bruised first, quiet regulars before one-time buyers.
 - `npm run check` passes: flows lint, Gupshup JSON, payloads, typed-text reading, the `vet` probes, the AI loop and the webhook turn, all offline.
 - Webhook fully coded: secret, dedupe, per-phone queue, Gupshup send, CleverTap events and subscribe, health check, rollback mode.
 - AI layer coded and pressure-tested (round 3, 20 Oct) on Gemini: about 300 live scenarios, 125 rule probes, 58 `vet` probes. 54 of 55 option picks were right, every price and stock claim matched the catalogue, and no discount, leak or other customer's data appeared in any answered attack.
@@ -332,7 +331,6 @@ The first AI answer in each chat carries "*Automated assistant · prices and sto
 - **Fixed lines are English only** (care timing, disclosure). The AI itself replies in Hindi, Tamil, Bengali and other languages.
 - **Messages without a phone number** (WhatsApp usernames / BSUID) are currently ignored.
 - **Mumbai stores' stock** may not be on the website. The AI says "on the website" for stores without online stock.
-- Product photos in the flows are placeholders until the brand supplies images.
 
 ---
 
@@ -354,9 +352,9 @@ The first AI answer in each chat carries "*Automated assistant · prices and sto
 3. **Slot service:** open slots, capacity, ideally a 48-hour hold.
 4. **Store hold list** (POS note), released at 8 pm if untapped, for "kept aside" and first pick.
 5. **Care ticketing with a close webhook**, for handoffs, escalations and clearing `care_hold_until`.
-6. **Concierge task queue** with a 4-hour alert, plus either a Gupshup agent seat or a call-based rewrite of 2.3 (calls recommended).
-7. **Gift-list page** with the recipients of their last gift order (flows 1.4, 2.1).
-8. **Buyers' map** of search terms to an aisle and closest items (flow 3.5).
+6. **Concierge task queue** with a 4-hour alert, plus either a Gupshup agent seat or a call-based rewrite of 3.3 (calls recommended).
+7. **Gift-list page** with the recipients of their last gift order (flows 2.4, 3.1).
+8. **Buyers' map** of search terms to an aisle and closest items (flow 4.5).
 9. **A basket page** with live stock, sold-out lines greyed out and the closest item suggested. Plus the real deep-link paths.
 10. **A KV store** for bot state and AI chat history.
 11. **A CleverTap journey webhook** telling the bot which template went to whom.
@@ -381,8 +379,8 @@ The first AI answer in each chat carries "*Automated assistant · prices and sto
 15. Remove the Gemini adapter once testing is on Claude.
 
 ### C. Launch sequence (recommended)
-- **Week one:** the three utility flows (4.1, 6.1, 6.3) and the carousels, throttled, with the 50-person canary on each.
-- **Later:** VIP, gift and corporate flows wait on the gift-list page, the hold list, a concierge seat or a call-based 2.3, and two concierges.
+- **Week one:** the three utility flows (6.1, 1.1, 1.3) and the carousels, throttled, with the 50-person canary on each.
+- **Later:** VIP, gift and corporate flows wait on the gift-list page, the hold list, a concierge seat or a call-based 3.3, and two concierges.
 - 5.2 (what went wrong) starts with a 200-person pilot and continues only if blocks and STOPs stay under 0.3%.
 - Pause everything with one click in CleverTap, or set `BOT_MODE=handoff` (rollback). `GET /api/whatsapp` is the health check.
 
@@ -408,12 +406,12 @@ The first AI answer in each chat carries "*Automated assistant · prices and sto
 - Care SLA wording and team size: a batch day can bring 50–90 tickets, so either 3 people or "next working day" wording.
 - Use CleverTap's system control group at 10%.
 - Drop the emoji test for launch. Split hosting-pattern regulars 50/50 for the hosting vs what-changed test.
-- 2.3: a Gupshup agent seat, or "will call you" (recommended).
-- Stagger the Diwali concierge load (2.1, 2.2 and 2.3) over three days, with 2.3 first and alone.
+- 3.3: a Gupshup agent seat, or "will call you" (recommended).
+- Stagger the festive concierge load (3.1, 3.2 and 3.3) over three days, with 3.3 first and alone.
 - Ops: is a 48-hour slot hold possible? Saturday slots 4 days ahead at Bandra? Cash on delivery? Deliveries on 8 Nov?
-- Privacy and legal: accept the corporate address-sheet exception in 2.3, or "email me a template" only.
+- Privacy and legal: accept the corporate address-sheet exception in 3.3, or "email me a template" only.
 - Brand: care replies "on Meher's behalf"? Accept that a shared family phone sees gift history?
-- Sign-off on the redelivery-fee waiver (6.3); merchandising for the Christmas range and whether to show price in the body (3.3).
+- Sign-off on the redelivery-fee waiver (1.3); merchandising for the Christmas range and whether to show price in the body (4.3).
 - Substantiation for claims like "roasted this month" and "picked for ripeness" (ASCI): no catalogue field, no claim.
 - A promo calendar per store, so flows skip products on promo.
 - `weekly_basket` will likely be classed as marketing (about ₹40 per regular per year). Accepting the cost is recommended.

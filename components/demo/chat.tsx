@@ -43,8 +43,7 @@ function rich(text: string) {
   });
 }
 
-// A product's own photo (on its card), or a placeholder for the flows' photos until the brand's own images are
-// dropped in.
+// A product's own photo from the catalogue, or an emoji stand-in where a message has none.
 function Pic({ photo }: { photo: Photo }) {
   const { url, alt, emoji } = photo;
   if (url)

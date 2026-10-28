@@ -1,4 +1,4 @@
-// 1 · Lapsed VIPs: their signature item and favourite category lead; access and convenience, never a discount
+// 2 · Lapsed VIPs: their signature item and favourite category lead; access and convenience, never a discount
 import type { Flow } from "../../lib/bot.ts";
 import {
   basket,
@@ -12,11 +12,12 @@ import {
   CUTOFF,
   CLOSEST,
   CALLBACK,
+  catalogPhoto,
 } from "./shared.ts";
 
 export const lapsedVips: Flow[] = [
   {
-    n: 1,
+    n: 2,
     name: "Day 30 · their usual, kept aside",
     key: "vip-kept-aside",
     signal: "VIP whose signature item, burrata, is in most of their orders",
@@ -34,7 +35,7 @@ export const lapsedVips: Flow[] = [
       "The store has the hold list that morning, as a POS note under each name; sends are capped at 30% of the day's stock, and a hold nobody has tapped by 8 pm is released",
     ],
     start: {
-      photo: { emoji: "🧀", alt: "fresh Spotted Cow burrata at Banjara Hills" },
+      photo: catalogPhoto("1/0/prd_4856_bb27cbd9f56fbaeb.jpg", "fresh Spotted Cow burrata at Banjara Hills"),
       text: "Hi Anjali,\n\nA fresh batch of *Spotted Cow burrata* reached our Banjara Hills cheese counter today, and we've set one aside in your name. 🧀\n\nIt's yours until *Wednesday, 8 pm*. Shall we bring it over, or keep it for you at the store?",
       footer: "FoodStories Banjara Hills · Reply STOP to opt out",
       buttons: [
@@ -50,6 +51,7 @@ export const lapsedVips: Flow[] = [
           needs: {
             what: "the hold is still live (before Wednesday 8 pm) and a burrata is still at the store",
             else: "gone",
+            stock: ["spotted-cow-burrata-di-bufala"],
           },
         },
       ],
@@ -65,7 +67,11 @@ export const lapsedVips: Flow[] = [
             "Perfect. Your *Spotted Cow burrata* is at the Cheese Cellar counter under your name until *Wednesday, 8 pm*, and the store is open 10 am–9 pm.\n\nSimply show this message when you come in. Anything you add to your basket will be packed with it.",
             "Add to my pickup",
           ),
-          needs: { what: "the hold is still live and a burrata is still at the store", else: "gone" },
+          needs: {
+            what: "the hold is still live and a burrata is still at the store",
+            else: "gone",
+            stock: ["spotted-cow-burrata-di-bufala"],
+          },
           bot: "tells the store (POS note: name, burrata, until Wed 8 pm); marks the basket for pickup",
         },
       ],
@@ -118,7 +124,7 @@ export const lapsedVips: Flow[] = [
     },
   },
   {
-    n: 1,
+    n: 2,
     name: "Day 60 · first pick of a new drop",
     key: "vip-new-drop",
     signal: "VIP who buys single-origin coffee in most orders",
@@ -134,7 +140,7 @@ export const lapsedVips: Flow[] = [
       "No coffee-drop message in the last 30 days (last_coffee_drop_at)",
     ],
     start: {
-      photo: { emoji: "☕", alt: "the new single-origin from Nandan" },
+      photo: catalogPhoto("1/0/prd_6460_61bd9a273705948c.jpg", "the new single-origin from Nandan"),
       text: "Hi Leela,\n\nA new small-batch *single-origin from Nandan*, roasted this month, reached our Lavelle Road store today. ☕\n\nYou have first pick before it goes on the shelf on *Saturday*. Shall we set a bag aside in your name?",
       footer: "FoodStories Lavelle Road · Reply STOP to opt out",
       buttons: [
@@ -191,7 +197,7 @@ export const lapsedVips: Flow[] = [
     },
   },
   {
-    n: 1,
+    n: 2,
     name: "Day 64 · their usual, ready to go",
     key: "vip-usual-basket",
     signal: "VIP with a usual basket: the same few items on most Saturdays",
@@ -274,7 +280,7 @@ export const lapsedVips: Flow[] = [
             "Done ✅ We'll ask just once more, next Friday, and your usual basket stays saved here in the meantime.",
             "See my usual basket",
           ),
-          bot: "sets usual_basket_reask_on = next Friday; the reminder goes only if the 2-in-7 cap allows, and inside the Diwali window the day-70 message carries it instead",
+          bot: "sets usual_basket_reask_on = next Friday; the reminder goes only if the 2-in-7 cap allows, and inside a gifting window the day-70 message carries it instead",
         },
       ],
       saved: [
@@ -289,12 +295,12 @@ export const lapsedVips: Flow[] = [
     },
   },
   {
-    n: 1,
-    name: "Day 70 · Diwali, two days early",
+    n: 2,
+    name: "Day 70 · festive hampers, two days early",
     key: "vip-diwali-early",
-    signal: "VIP who sent Diwali hampers last year",
+    signal: "VIP who sent hampers last festive season",
     category: "Hampers, from the top of their usual price band",
-    who: "Ten days after the day-60 message, in the Diwali window · from their store · marketing template",
+    who: "Ten days after the day-60 message, in a gifting window (Christmas here) · from their store · marketing template",
     why: [
       "Early access, not a discount: hampers two days before everyone else, starting at the top of their usual price band.",
       "Remembers what they sent last year, so the easiest answer is one tap, and a call if the list can't be rebuilt.",
@@ -302,11 +308,11 @@ export const lapsedVips: Flow[] = [
     ],
     gate: [
       "Last year's hamper exists this year with stock for the same quantity, and at least 2 ship-to addresses are on file; otherwise the template goes without “Same as last year”",
-      "Sent at least 2 days before the public opening and before the Dhanteras order-by date",
+      "Sent at least 2 days before the public opening and before the occasion's order-by date (18 Dec for Christmas)",
     ],
     start: {
-      photo: { emoji: "🪔", alt: "this year's Festive Edit hampers" },
-      text: "Hi Anjali,\n\nYou have first pick of our Diwali hampers from today, two days before they open to everyone on *Sunday*. 🪔\n\nLast year you sent *4 Harvests of the World hampers*. Every hamper can carry a gift note from you, whichever you choose.",
+      photo: catalogPhoto("1/0/1000018946-pdp-1_fetnh8lqz8reu2uh.jpg", "this season's Festive Edit hampers"),
+      text: "Hi Anjali,\n\nYou have first pick of our Christmas and New Year hampers from today, two days before they open to everyone on *Sunday*. 🎄\n\nLast year you sent *4 Harvests of the World hampers*. Every hamper can carry a gift note from you, whichever you choose.",
       footer: "FoodStories Banjara Hills · Reply STOP to opt out",
       buttons: [
         { title: "Same as last year", next: "same" },
@@ -371,21 +377,21 @@ export const lapsedVips: Flow[] = [
       late: [
         {
           ...basket(
-            "Our apologies, that one has gone for this Diwali. 🙏\n\nEverything still in stock with delivery before Diwali is here, to choose from at your leisure.",
+            "Our apologies, that one can't reach you in time for Christmas now. 🙏\n\nEverything still in stock that can arrive before New Year's Eve is here, to choose from at your leisure.",
             "See the Festive Edit",
             "/collections/festive-edit",
           ),
-          bot: "after Diwali itself the link goes to the Cheese Cellar instead",
+          bot: "after New Year's Day the link goes to the Cheese Cellar instead",
         },
       ],
       no: [
         {
           ...basket(
-            "Of course, Anjali. We won't write about hampers again this Diwali.\n\nIf you're hosting, our Banjara Hills Cheese Cellar is ready whenever you are. Happy Diwali from all of us. 🪔",
+            "Of course, Anjali. We won't write about hampers again this season.\n\nIf you're hosting, our Banjara Hills Cheese Cellar is ready whenever you are. Season's greetings from all of us. 🎄",
             "See the cheeses",
             "/collections/cheese",
           ),
-          bot: "sets gifting_declined_until = 9 Nov, so the slot cut-off push and every other hamper message skip her",
+          bot: "sets gifting_declined_until = 2 Jan, so the slot cut-off push and every other hamper message skip her",
         },
       ],
     },

@@ -1,41 +1,41 @@
 // Every conversation the bot can run, gathered in segment order, with the deck's six segments and what CleverTap checks
 // before any template goes out. One file per segment; run `npm run check` after editing.
 import type { Flow, Segment } from "../../lib/bot.ts";
-import { lapsedVips } from "./1-lapsed-vips.ts";
-import { pastGiftBuyers } from "./2-past-gift-buyers.ts";
-import { stillBrowsing } from "./3-still-browsing.ts";
-import { oneTimeBuyers } from "./4-one-time-buyers.ts";
+import { serviceBruised } from "./1-service-bruised.ts";
+import { lapsedVips } from "./2-lapsed-vips.ts";
+import { pastGiftBuyers } from "./3-past-gift-buyers.ts";
+import { stillBrowsing } from "./4-still-browsing.ts";
 import { quietRegulars } from "./5-quiet-regulars.ts";
-import { serviceBruised } from "./6-service-bruised.ts";
+import { oneTimeBuyers } from "./6-one-time-buyers.ts";
 
 // The deck's six segments, in the order shown. Every conversation is a sub-segment of one of them, in that segment's file.
 export const segments: Segment[] = [
-  { n: 1, name: "Lapsed VIPs", priority: "P0", who: "A VIP with no purchase in 30+ days." },
   {
-    n: 2,
+    n: 1,
+    name: "Service-bruised",
+    priority: "P0",
+    who: "Inactive, and their last order went wrong. Day 31–90 after that order.",
+  },
+  { n: 2, name: "Lapsed VIPs", priority: "P0", who: "A VIP with no purchase in 30+ days." },
+  {
+    n: 3,
     name: "Past gift buyers",
     priority: "P1",
     who: "Inactive, and has bought a gift hamper at least once, browsed the gift section in the last 30 days, or ordered corporate gifts. Only in the 21 days before an occasion.",
   },
   {
-    n: 3,
+    n: 4,
     name: "Inactive, still browsing",
     priority: "P1",
     who: "No purchase in 30+ days, but visited the app or site in the last 30 days.",
   },
-  { n: 4, name: "One-time buyers", priority: "P2", who: "Bought once, nothing since, and no recent visit." },
   {
     n: 5,
     name: "Quiet regulars",
     priority: "P1",
     who: "Two or more orders, with no purchase and no visit in 30+ days.",
   },
-  {
-    n: 6,
-    name: "Service-bruised",
-    priority: "P0",
-    who: "Inactive, and their last order went wrong. Day 31–90 after that order.",
-  },
+  { n: 6, name: "One-time buyers", priority: "P2", who: "Bought once, nothing since, and no recent visit." },
 ];
 
 // Checked by CleverTap at the moment of send, for every template. Segmentation is days old by then.
@@ -67,10 +67,10 @@ export const sendGates = [
 //
 // In segment order, which the demo and the dashboard number as n.m.
 export const flows: Flow[] = [
+  ...serviceBruised,
   ...lapsedVips,
   ...pastGiftBuyers,
   ...stillBrowsing,
-  ...oneTimeBuyers,
   ...quietRegulars,
-  ...serviceBruised,
+  ...oneTimeBuyers,
 ];

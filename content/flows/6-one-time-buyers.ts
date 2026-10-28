@@ -1,10 +1,10 @@
-// 4 · One-time buyers: their first order decides the category; learn why, then give a second reason
+// 6 · One-time buyers: their first order decides the category; learn why, then give a second reason
 import type { Flow } from "../../lib/bot.ts";
-import { basket, okayAnswers, expressDelivery, CLOSEST } from "./shared.ts";
+import { basket, catalogPhoto, okayAnswers, expressDelivery, CLOSEST } from "./shared.ts";
 
 export const oneTimeBuyers: Flow[] = [
   {
-    n: 4,
+    n: 6,
     name: "Day 31 · feedback first",
     key: "once-feedback-first",
     signal: "One order 31 days ago, mostly from the bakery",
@@ -114,7 +114,7 @@ export const oneTimeBuyers: Flow[] = [
     },
   },
   {
-    n: 4,
+    n: 6,
     name: "Day 31 · basket first",
     key: "once-basket-first",
     signal: "One order 31 days ago, mostly from the Cheese Cellar",
@@ -181,7 +181,7 @@ export const oneTimeBuyers: Flow[] = [
     },
   },
   {
-    n: 4,
+    n: 6,
     name: "After the feast",
     key: "once-after-feast",
     signal: "One order, mostly fresh produce; quiet since",
@@ -197,7 +197,7 @@ export const oneTimeBuyers: Flow[] = [
       "Diet guard: greens, avocados, rye and tea suit every household; nothing with eggs or meat here",
     ],
     start: {
-      photo: { emoji: "🥗", alt: "a fresh basket for the week after Diwali" },
+      photo: catalogPhoto("1/0/prd_7541_99606bac53919648.jpg", "hydroponic greens, first in the basket"),
       text: "Hi Karan,\n\nWe hope Diwali filled your home with light and laughter. 🪔 For the calmer days after the feast, we've put together a fresh basket:\n• Hydroponic greens\n• Hass avocados\n• Dark Rye sourdough\n• Tea Library Morning Reset\n\nIt's been a little while since your last order, and all of us at Lokhandwala would love to welcome you back. Shall we add it to your basket?",
       footer: "FoodStories Lokhandwala · Reply STOP to opt out",
       buttons: [

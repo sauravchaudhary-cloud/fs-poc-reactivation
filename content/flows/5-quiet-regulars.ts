@@ -11,6 +11,7 @@ import {
   weekly,
   REMINDER,
   standingSet,
+  catalogPhoto,
 } from "./shared.ts";
 
 export const quietRegulars: Flow[] = [
@@ -34,17 +35,17 @@ export const quietRegulars: Flow[] = [
       text: "Hi Ishita,\n\nIt's been a little while since your last order from the Cheese Cellar at Lavelle Road, and we'd love to welcome you back. 🧀\n\nHere are the three newest cheeses on the counter, each just one tap from your basket.",
       cards: [
         {
-          photo: { emoji: "🧀", alt: "a wedge of Kodai Gruyère" },
+          photo: catalogPhoto("1/0/prd_7205_f020cee77acfab92.jpg", "Kodai Gruyère"),
           text: "*Kodai Gruyère*\nMade in Kodaikanal from cow's milk. Nutty and firm, and beautiful melted over toast.",
           buttons: [{ title: "Add to my basket", next: "gruyere" }],
         },
         {
-          photo: { emoji: "🧀", alt: "a wedge of Manchego" },
+          photo: catalogPhoto("1/0/prd_4374_0774d1cfed1bd33b.jpg", "Manchego"),
           text: "*Manchego*\nA sheep's milk cheese from La Mancha, Spain. Rich and gently sharp, and made for a cheese board.",
           buttons: [{ title: "Add to my basket", next: "manchego" }],
         },
         {
-          photo: { emoji: "🧀", alt: "a wedge of Grandma Singletons Cheddar" },
+          photo: catalogPhoto("s/i/prd_4851_17e233ef168b6fed.jpg", "Grandma Singletons Cheddar"),
           text: "*Grandma Singletons Cheddar*\nA mature cheddar from Lancashire. Crumbly and tangy, and perfect with crackers and chutney.",
           buttons: [{ title: "Add to my basket", next: "cheddar" }],
         },
@@ -54,7 +55,11 @@ export const quietRegulars: Flow[] = [
       gruyere: [
         {
           text: "Done ✅ The *Kodai Gruyère* is in your basket at Lavelle Road.",
-          needs: { what: "still in stock at Lavelle Road and the add succeeded", else: "out" },
+          needs: {
+            what: "still in stock at Lavelle Road and the add succeeded",
+            else: "out",
+            stock: ["kodai-cheese-gruyere-cheese"],
+          },
           bot: "the question below goes once per conversation; later taps get “Done ✅ … is in too” and the link",
         },
         weekly(
@@ -64,7 +69,11 @@ export const quietRegulars: Flow[] = [
       manchego: [
         {
           text: "Done ✅ The *Manchego* is in your basket at Lavelle Road.",
-          needs: { what: "still in stock at Lavelle Road and the add succeeded", else: "out" },
+          needs: {
+            what: "still in stock at Lavelle Road and the add succeeded",
+            else: "out",
+            stock: ["manchego-cheese"],
+          },
           bot: "question once per conversation",
         },
         weekly(
@@ -74,7 +83,11 @@ export const quietRegulars: Flow[] = [
       cheddar: [
         {
           text: "Done ✅ The *Grandma Singletons Cheddar* is in your basket at Lavelle Road.",
-          needs: { what: "still in stock at Lavelle Road and the add succeeded", else: "out" },
+          needs: {
+            what: "still in stock at Lavelle Road and the add succeeded",
+            else: "out",
+            stock: ["grandma-singletons-mature-cheddar-cheese"],
+          },
           bot: "question once per conversation",
         },
         weekly(
@@ -369,24 +382,24 @@ export const quietRegulars: Flow[] = [
   },
   {
     n: 5,
-    name: "Diwali · hosting",
+    name: "Festive hosting",
     key: "regular-diwali-hosting",
     signal: "Regular whose orders show a hosting pattern: large baskets before festivals",
     category: "Cheese and charcuterie",
-    who: "Diwali window, from 27 Oct · from their store · tested against “what changed” · marketing template",
+    who: "Christmas and New Year window, from 10 Dec · from their store · tested against “what changed” · marketing template",
     why: [
       "Gives quiet regulars a reason that fits the season: hosting, built from what they used to buy for it.",
-      "Leads with the practical part, a delivery slot before Diwali, and the platters that come ready to serve.",
+      "Leads with the practical part, a delivery slot before the party, and the platters that come ready to serve.",
       "Uses the Delhi voice, “your table”. The deck tests this against a “what changed” message.",
       "A slot is never “held” in the chat unless the site can really hold it: the honest version says to choose it while it's open.",
     ],
     gate: [
-      "Their usual cheeses and bakes are in stock at Vasant Kunj at send; otherwise the line reads “the Cheese Cellar at Vasant Kunj is stocked for Diwali”",
-      "Sent 27 Oct–4 Nov only; pre-Diwali slots have capacity; this flow outranks new arrivals and after-the-feast in the caps",
+      "Their usual cheeses and bakes are in stock at Vasant Kunj at send; otherwise the line reads “the Cheese Cellar at Vasant Kunj is stocked for the season”",
+      "Sent 10–22 Dec only; slots before Christmas Eve and New Year's Eve have capacity; this flow outranks new arrivals in the caps",
     ],
     start: {
-      photo: { emoji: "🪔", alt: "a Diwali table laid with cheeses, bakes and diyas" },
-      text: "Hi Tanvi,\n\nHosting this Diwali? Your usual cheeses and bakes are in at Vasant Kunj, and our cheese platters arrive ready to serve, from *₹2,500*. 🪔\n\nIt's been a little while since your last order, and we'd love to help set your table again. Shall we find you a delivery day before Diwali?",
+      photo: catalogPhoto("g/i/prd_11888_f740b73de8a1dec3.jpg", "a cheese platter laid for guests"),
+      text: "Hi Tanvi,\n\nHosting this Christmas or New Year's Eve? Your usual cheeses and bakes are in at Vasant Kunj, and our cheese platters arrive ready to serve, from *₹2,500*. 🎄\n\nIt's been a little while since your last order, and we'd love to help set your table again. Shall we find you a delivery day before the party?",
       footer: "FoodStories Vasant Kunj · Reply STOP to opt out",
       buttons: [
         { title: "Pick a delivery day", next: "plan" },
@@ -398,15 +411,15 @@ export const quietRegulars: Flow[] = [
       plan: [
         {
           text: "With pleasure. Which day would suit you best for delivery?",
-          needs: { what: "at least one pre-Diwali day still has open slots", else: "late" },
-          bot: "rows from the slot service: only days still open; 8 Nov is Diwali itself and a no-send day, so deliveries that day need ops sign-off",
+          needs: { what: "at least one day before Christmas Eve or New Year's Eve still has open slots", else: "late" },
+          bot: "rows from the slot service: only days still open; deliveries on 25 Dec and 1 Jan need ops sign-off",
           list: {
             button: "Choose a day",
-            section: "Before Diwali",
+            section: "Before the parties",
             rows: [
-              { title: "Fri, 6 Nov (Dhanteras)", next: "day" },
-              { title: "Sat, 7 Nov", next: "day" },
-              { title: "Sun, 8 Nov, by noon", next: "day" },
+              { title: "Thu, 24 Dec", description: "Christmas Eve", next: "day" },
+              { title: "Wed, 30 Dec", next: "day" },
+              { title: "Thu, 31 Dec, by noon", description: "New Year's Eve", next: "day" },
             ],
           },
         },
@@ -414,7 +427,7 @@ export const quietRegulars: Flow[] = [
       day: [
         {
           ...basket(
-            "*{choice}* it is. 🪔\n\nDiwali slots tend to fill a few days ahead, so do choose that day's slot at checkout while it's open.",
+            "*{choice}* it is. 🎄\n\nSlots that week tend to fill a few days ahead, so do choose that day's slot at checkout while it's open.",
             "Build my order",
             "/checkout",
           ),
@@ -423,7 +436,7 @@ export const quietRegulars: Flow[] = [
       ],
       late: [
         basket(
-          "We're sorry, our pre-Diwali delivery slots are now full. Pickup from Vasant Kunj stays open right up to Diwali, and you can choose it at checkout.",
+          "We're sorry, our delivery slots before the holidays are now full. Pickup from Vasant Kunj stays open right up to New Year's Eve, and you can choose it at checkout.",
           "Build my order",
           "/checkout?pickup=1",
         ),
@@ -441,9 +454,9 @@ export const quietRegulars: Flow[] = [
       no: [
         {
           ...basket(
-            "Of course, Tanvi. Your usual cheeses and bakes are here whenever you'd like them.\n\nWishing you a very happy Diwali from all of us at FoodStories. 🪔",
+            "Of course, Tanvi. Your usual cheeses and bakes are here whenever you'd like them.\n\nSeason's greetings from all of us at FoodStories. 🎄",
           ),
-          bot: "sets gifting_declined_until = 9 Nov and wa_snooze_until = +45 days",
+          bot: "sets gifting_declined_until = 2 Jan and wa_snooze_until = +45 days",
         },
       ],
     },

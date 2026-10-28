@@ -1,11 +1,11 @@
-// 6 · Service-bruised: built on the signals CleverTap has (cancellation_reason, delivery failed).
+// 1 · Service-bruised: built on the signals CleverTap has (cancellation_reason, delivery failed).
 // We never know the detail, so the message owns only what we know and lets the customer tell us the rest.
 import type { Flow } from "../../lib/bot.ts";
 import { basket, slots, slotOpen, slotGone, CARE_BY, TICKET, CLOSEST, ROWS } from "./shared.ts";
 
 export const serviceBruised: Flow[] = [
   {
-    n: 6,
+    n: 1,
     name: "Cancelled it themselves",
     key: "bruised-cancelled",
     signal: "Order Cancelled, cancellation_reason “User Initiated” (about 150 in the last 30 days)",
@@ -131,7 +131,7 @@ export const serviceBruised: Flow[] = [
     },
   },
   {
-    n: 6,
+    n: 1,
     name: "Payment didn't go through",
     key: "bruised-payment",
     signal: "Order Cancelled, cancellation_reason “Payment Failure Initiated” (about 1,100), and no order since",
@@ -194,7 +194,7 @@ export const serviceBruised: Flow[] = [
     },
   },
   {
-    n: 6,
+    n: 1,
     name: "Delivery failed",
     key: "bruised-delivery",
     signal: "Order Delivery Failed (254 in the last 30 days)",

@@ -39,6 +39,7 @@ type Turn = {
   content: Record<string, string>; // the message's `payload`
   text: string; // its text, title or caption, cleaned (`clean` in lib/guardrails.ts)
   open?: OpenNode;
+  answered?: Answer & { trace: Trace }; // the AI's answer, recorded once the customer has it
 };
 
 // A node to play, and how it was chosen: a tap, or what they typed, read by the rules or by the AI.
@@ -102,10 +103,13 @@ export async function handle(inbound: Inbound, io: IO) {
   const tap = parsePayload(postback) ?? tapByTitle(turn);
   // An opted-out phone gets nothing from a flow until START; what they type still reaches customer care and the AI.
   if (tap && optedOut.has(phone)) return say(turn, [REPLIES.paused]);
-  const chosen: Chosen | undefined = tap ? { ...tap, by: "tap", choice: text } : await readTyped(turn);
-  if (!chosen) return; // answered already
-  if (!chosen.node) return; // unreachable: a tap or `read` always names a node by here
-  await play(turn, chosen);
+  try {
+    const chosen: Chosen | undefined = tap ? { ...tap, by: "tap", choice: text } : await readTyped(turn);
+    if (chosen?.node) await play(turn, chosen); // none: answered already (a tap or `read` always names a node)
+  } finally {
+    // After the reply, not before: CleverTap's round trip shouldn't hold up what the customer is waiting for.
+    if (turn.answered) await recordAnswer(turn, turn.answered);
+  }
 }
 
 // STOP or "wrong number": the phone goes on the opted-out list and is unsubscribed in CleverTap until START, and its
@@ -223,7 +227,7 @@ async function askAI(turn: Turn, asked: Msg | undefined): Promise<Chosen | undef
         options,
       })
     : undefined;
-  if (out) await recordAnswer(turn, out);
+  turn.answered = out;
   switch (out?.kind) {
     case "tap": {
       const picked = options[out.option];

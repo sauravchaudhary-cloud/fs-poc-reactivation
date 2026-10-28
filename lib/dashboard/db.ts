@@ -29,9 +29,10 @@ export function openDatabase(file = process.env.VERCEL ? "/tmp/dashboard.db" : "
   if (file !== ":memory:") mkdirSync(dirname(file), { recursive: true });
   const db = new DatabaseSync(file);
   createTables(db);
-  if (!(db.prepare("select count(*) as n from customers").get() as { n: number }).n) seedSample(db);
+  sampleOfToday(db);
 
   return {
+    sampleOfToday: (today?: string) => sampleOfToday(db, today),
     customers: () => db.prepare("select * from customers").all() as Customer[],
     calls: () => db.prepare("select * from calls order by at, id").all() as Call[],
     has: (phone: string) => !!db.prepare("select 1 from customers where phone = ?").get(phone),
@@ -49,9 +50,10 @@ export function openDatabase(file = process.env.VERCEL ? "/tmp/dashboard.db" : "
 }
 
 let opened: ReturnType<typeof openDatabase> | undefined;
-// The app's database, opened on first use.
+// The app's database, opened on first use, with a sample from an earlier day seeded again.
 export const database = () => {
   opened ??= openDatabase();
+  opened.sampleOfToday();
   return opened;
 };
 
@@ -69,13 +71,24 @@ function createTables(db: DatabaseSync) {
   `);
 }
 
-// The sample customers and a few days of calls to them, until the first real import.
-function seedSample(db: DatabaseSync) {
-  const today = indiaDate();
+// The sample customers and a few days of calls to them, until the first real import. The sample is dated from the day
+// it's seeded, so a sample from an earlier day is seeded again (the same customers, today's dates): the call lists
+// never go stale between demos. user_version holds the day it was seeded, as 20261028.
+function sampleOfToday(db: DatabaseSync, today = indiaDate()) {
+  const day = Number(today.replaceAll("-", ""));
+  const { customers, real } = db
+    .prepare("select count(*) as customers, coalesce(sum(sample = 0), 0) as real from customers")
+    .get() as { customers: number; real: number };
+  const { user_version } = db.prepare("pragma user_version").get() as { user_version: number };
+  if (real || (customers && user_version === day)) return;
   const sample = sampleCustomers(today);
   inTransaction(db, () => {
+    db.exec(
+      "delete from calls where phone in (select phone from customers where sample = 1); delete from customers where sample = 1;",
+    );
     upsert(db, sample, COLUMNS);
     for (const call of sampleCalls(sample, today)) insertCall(db, call);
+    db.exec(`pragma user_version = ${day}`);
   });
 }
 

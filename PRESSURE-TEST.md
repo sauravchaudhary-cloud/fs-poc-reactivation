@@ -1,6 +1,6 @@
 # Pressure test: results
 
-Two rounds, 19 Oct 2026. Round 1: three agents walked every node of the 25 flows (segments 1–2, 3, 4–6) with one checklist; a fourth verified the Gupshup, CleverTap and Meta facts. Round 2: three agents took the customer's, the business's and the engineer's point of view against the rewritten flows and the bot. Round 3, 20 Oct 2026: the AI that answers typed messages (section G). Everything they found is below, one line each. Flow numbers are today's, after segment 2 was regrouped on 21 Oct: the rounds' 2.2 (corporate) is now 2.3, 3.7 (gift pages) is now 2.2, 3.8 (home page) is now 3.7, and 2.3 (Christmas) is now 2.1's Christmas send.
+Two rounds, 19 Oct 2026. Round 1: three agents walked every node of the 25 flows (lapsed VIPs and past gift buyers; still browsing; the other three segments) with one checklist; a fourth verified the Gupshup, CleverTap and Meta facts. Round 2: three agents took the customer's, the business's and the engineer's point of view against the rewritten flows and the bot. Round 3, 20 Oct 2026: the AI that answers typed messages (section G). Everything they found is below, one line each. Flow numbers are today's: past gift buyers were regrouped on 21 Oct (the rounds' 2.2, corporate, is now 3.3; 3.7, gift pages, is now 3.2; 3.8, home page, is now 4.7; 2.3, Christmas, is now 3.1's Christmas send), and on 27 Oct the segments were renumbered with service-bruised first and quiet regulars before one-time buyers.
 
 Status: **✅ fixed** in this repo · **🟡 decision** needed, by whom · **🔵 live test** needed, what settles it · **📝 documented** in BOT.md as a launch dependency or open question.
 
@@ -13,7 +13,7 @@ Status: **✅ fixed** in this repo · **🟡 decision** needed, by whom · **�
 | A3 | "Your slot: X ✅" | Booked nothing; slot could be full at checkout | ✅ "*X* is open ✅, picked for you at checkout, pay to lock it in"; slot id in the link; "that one just filled" re-lists 🟡 ops: is a 48-h hold possible? |
 | A4 | Slot rows | Literal "Today, 6–8 pm" after 6 pm, "Thursday" relative to nothing | ✅ Rows rebuilt by the bot from the slot service at tap; check script requires the note on every slot list 🔵 slot API |
 | A5 | Product sold out between send and tap | Copy lied, or promised a next batch nobody can forecast | ✅ Send-time gate (stock that morning, 10+ for perishables) + tap-time check + "you just missed it" cross-sell; a FORECAST lint fails any future-stock phrase |
-| A6 | "Reserve from Friday's batch", "tell me the day it lands", "tomorrow's bake" | Promises on dates the business can't know | ✅ Removed everywhere; 3.4 and 3.5 rewritten as cross-sells; one "if it comes back" alert left in 3.4, gated on a stock feed |
+| A6 | "Reserve from Friday's batch", "tell me the day it lands", "tomorrow's bake" | Promises on dates the business can't know | ✅ Removed everywhere; 4.4 and 4.5 rewritten as cross-sells; one "if it comes back" alert left in 4.4, gated on a stock feed |
 | A7 | Promises that outlive the 24-h window ("we'll message you", "care will reply here") | Silent after the window closed | ✅ Each carries a `bot` note naming the CleverTap event, property and utility template; "here or by phone" wording 📝 templates to approve |
 | A8 | Typed "yes", "haan", "ok", "nahi", "thanks", 👍 | All went to "a real person will reply" plus a basket link | ✅ Intent reading: yes/no act as the first/last button, thanks gets a nod, STOP in five spellings opts out, the rest goes to care with real hours and no link |
 | A9 | STOP mid-flow, "unsubscribe", "band karo" | Only a bare "stop" matched | ✅ Variants matched; bot calls CleverTap Subscribe API (Gupshup no longer checks opt-outs); START resubscribes |
@@ -27,37 +27,37 @@ Status: **✅ fixed** in this repo · **🟡 decision** needed, by whom · **�
 | A17 | Marketing templates without "Reply STOP" | VIP and payment templates had none | ✅ Footer on every marketing template; check script requires it |
 | A18 | Carousel on an old WhatsApp client | Fails to render | ✅ Gate: a three-button fallback template 📝 |
 | A19 | Physical "kept aside for you" to a whole VIP list | Store can't honour it | ✅ Gate: pre-send allocation against stock, hold list to the store, hold released on decline 🟡 store ops |
-| A20 | A basket link opened days later, with a line sold out since, or an empty basket (a VIP with no order in 30 days) | The chat said "your basket is here"; the page could show a sold-out line or nothing | ✅ The declined item is never added; the bot sends a basket link only when the basket has an in-stock line, else the aisle (1.1 `counter`) 📝 the basket page shows live stock, greys out sold-out lines and suggests the closest item |
+| A20 | A basket link opened days later, with a line sold out since, or an empty basket (a VIP with no order in 30 days) | The chat said "your basket is here"; the page could show a sold-out line or nothing | ✅ The declined item is never added; the bot sends a basket link only when the basket has an in-stock line, else the aisle (2.1 `counter`) 📝 the basket page shows live stock, greys out sold-out lines and suggests the closest item |
 
 ## B. Flow by flow (round 1)
 
 | Flow | Scenario | Result |
 |---|---|---|
-| 1.1 kept aside | Burrata gone at tap; "Not this time" basket could hold out-of-stock items; no STOP footer; pickup nobody knew about | ✅ cross-sell fallback; decline names no items and releases the hold; footer; POS note |
-| 1.2 coffee drop | "Keep a bag" with no end date; a rotating drop called their "usual"; "Tell me about it" dropped the offer | ✅ hold until Saturday; shelf link instead of "usual"; "about" re-asks |
-| 1.3 usual basket | Six items forecast for Saturday; "Not this week" never re-asked; Saturday slots 4 days ahead | ✅ gate keeps only in-stock lines, skip if <3; "ask me next Friday" with cap note 🟡 ops: Saturday slots 4 days ahead |
-| 1.4 Diwali early | Last year's hamper or addresses may not exist; "two days before everyone" false after Sunday; cheese platter cross-city; no gifting suppression | ✅ gate + concierge-call fallback; copy; "same-city only"; gifting_declined_until |
-| 2.1 bought a gift hamper | "8 recipients" assumed 8 addresses; typed email echoed; "Call me" created nothing; "household team" | ✅ gate + `nolist` fallback; email on file; callback event; "people at home" |
-| 2.1 at Christmas | Diwali hampers shown for Christmas; cut-offs | ✅ rows marked as stand-ins for the live collection; cut-off `needs` 🟡 merchandising: Christmas range |
-| 2.2 gift pages | Rows above the band; "within 2 business hours" on Saturday; cut-off passed | ✅ band-correct rows; hours; `late` node |
-| 2.3 corporate | "Start my order" sent a 60-hamper buyer to a 10-hamper site; attached spreadsheet fell into handoff; typed email | ✅ quantity band → quote; `received` node for documents; email on file; 26 Oct reminder 📝 |
-| 3.1 reached checkout | Blocker assumed to be a slot; "60 minutes" at 8 pm; burrata gone | ✅ gate variants by blocker; express only when true; cross-sell `short` |
-| 3.2 left in cart | "Book 4–6 pm" after 6 pm; babka gone; cart journey double-nudge | ✅ gate before 2 pm, slot-id check, cross-sell; 7-day cart-journey exclusion |
-| 3.3 viewed product | "Add both" with one out; no price; one template per product | ✅ partial/gone cross-sells; variables 🟡 merchandising: price in body? |
-| 3.4 viewed, sold out | Built on a batch date and a reservation | ✅ rewritten as a cross-sell template; optional "if it's back" alert gated on a stock feed |
-| 3.5 searched, not stocked | "Sourcing it" for any term; "the day it lands" | ✅ rewritten: buyers' map of terms to aisle and closest items; no sourcing promise |
-| 3.6 category carousel | Card sold out; nudge ×3; diet guard | ✅ cross-sell `out`; nudge once per conversation; gate per card |
-| 3.7 home page | "Not now" claimed items were added | ✅ nothing added; cross-sell partial |
-| 4.1 feedback first | "okay" branches sent "your basket is saved" with no basket; freshness got a policy line; "tracking" | ✅ `okayAnswers()` shared branches; freshness → care; 60-minute line 🟡 ops: coverage |
-| 4.2 basket first | Gruyère sold out; "okay" went straight to a ticket | ✅ cross-sell; same five answers as 4.1 |
-| 4.3 after the feast | Four perishables in one template | ✅ per-store variables, skip thin stores; 9–15 Nov window |
+| 2.1 kept aside | Burrata gone at tap; "Not this time" basket could hold out-of-stock items; no STOP footer; pickup nobody knew about | ✅ cross-sell fallback; decline names no items and releases the hold; footer; POS note |
+| 2.2 coffee drop | "Keep a bag" with no end date; a rotating drop called their "usual"; "Tell me about it" dropped the offer | ✅ hold until Saturday; shelf link instead of "usual"; "about" re-asks |
+| 2.3 usual basket | Six items forecast for Saturday; "Not this week" never re-asked; Saturday slots 4 days ahead | ✅ gate keeps only in-stock lines, skip if <3; "ask me next Friday" with cap note 🟡 ops: Saturday slots 4 days ahead |
+| 2.4 Diwali early | Last year's hamper or addresses may not exist; "two days before everyone" false after Sunday; cheese platter cross-city; no gifting suppression | ✅ gate + concierge-call fallback; copy; "same-city only"; gifting_declined_until |
+| 3.1 bought a gift hamper | "8 recipients" assumed 8 addresses; typed email echoed; "Call me" created nothing; "household team" | ✅ gate + `nolist` fallback; email on file; callback event; "people at home" |
+| 3.1 at Christmas | Diwali hampers shown for Christmas; cut-offs | ✅ rows marked as stand-ins for the live collection; cut-off `needs` 🟡 merchandising: Christmas range |
+| 3.2 gift pages | Rows above the band; "within 2 business hours" on Saturday; cut-off passed | ✅ band-correct rows; hours; `late` node |
+| 3.3 corporate | "Start my order" sent a 60-hamper buyer to a 10-hamper site; attached spreadsheet fell into handoff; typed email | ✅ quantity band → quote; `received` node for documents; email on file; 26 Oct reminder 📝 |
+| 4.1 reached checkout | Blocker assumed to be a slot; "60 minutes" at 8 pm; burrata gone | ✅ gate variants by blocker; express only when true; cross-sell `short` |
+| 4.2 left in cart | "Book 4–6 pm" after 6 pm; babka gone; cart journey double-nudge | ✅ gate before 2 pm, slot-id check, cross-sell; 7-day cart-journey exclusion |
+| 4.3 viewed product | "Add both" with one out; no price; one template per product | ✅ partial/gone cross-sells; variables 🟡 merchandising: price in body? |
+| 4.4 viewed, sold out | Built on a batch date and a reservation | ✅ rewritten as a cross-sell template; optional "if it's back" alert gated on a stock feed |
+| 4.5 searched, not stocked | "Sourcing it" for any term; "the day it lands" | ✅ rewritten: buyers' map of terms to aisle and closest items; no sourcing promise |
+| 4.6 category carousel | Card sold out; nudge ×3; diet guard | ✅ cross-sell `out`; nudge once per conversation; gate per card |
+| 4.7 home page | "Not now" claimed items were added | ✅ nothing added; cross-sell partial |
+| 6.1 feedback first | "okay" branches sent "your basket is saved" with no basket; freshness got a policy line; "tracking" | ✅ `okayAnswers()` shared branches; freshness → care; 60-minute line 🟡 ops: coverage |
+| 6.2 basket first | Gruyère sold out; "okay" went straight to a ticket | ✅ cross-sell; same five answers as 6.1 |
+| 6.3 after the feast | Four perishables in one template | ✅ per-store variables, skip thin stores; 9–15 Nov window |
 | 5.1 new arrivals | Standing pitch ×3; card sold out | ✅ once per conversation; cross-sell |
 | 5.2 what went wrong | "I've moved" → "reply STOP"; "tracking"; pickup answer | ✅ city list → store switch or gifting-only; copy; `pickupfix` |
 | 5.3 usual day | "Done ✅ arrives Saturday" before payment; 7–9 am capacity | ✅ pay first; `full` re-lists 🟡 ops: cap sends to capacity |
 | 5.4 hosting | "Slot held" with no hold; 8 Nov is Diwali and a no-send day | ✅ honest "choose it while open" 🟡 ops: hold API; deliveries on 8 Nov |
-| 6.1 cancelled | Reasons answered with the wrong products; "price changed" got a smaller basket | ✅ cancelled-order lines checked; price → care; 60-minute line |
-| 6.2 payment failed | Read like phishing; refund claim wrong at day 31; no STOP footer | ✅ order number; "should be back by now, tap and we'll chase it"; footer |
-| 6.3 delivery failed | Said nothing about the refund; "Done ✅ delivery on X" before payment; "Next time" lectured | ✅ refund line + gate on refunded; pay first; tone 🟡 sign-off: redelivery-fee waiver |
+| 1.1 cancelled | Reasons answered with the wrong products; "price changed" got a smaller basket | ✅ cancelled-order lines checked; price → care; 60-minute line |
+| 1.2 payment failed | Read like phishing; refund claim wrong at day 31; no STOP footer | ✅ order number; "should be back by now, tap and we'll chase it"; footer |
+| 1.3 delivery failed | Said nothing about the refund; "Done ✅ delivery on X" before payment; "Next time" lectured | ✅ refund line + gate on refunded; pay first; tone 🟡 sign-off: redelivery-fee waiver |
 
 ## C. Customer point of view (round 2)
 
@@ -66,10 +66,10 @@ Status: **✅ fixed** in this repo · **🟡 decision** needed, by whom · **�
 | C1 | STOPped last month, taps an old button | The node's messages went out; Gupshup no longer blocks opt-outs | ✅ Bot keeps an opted-out list; a tap gets one line ("reply START to pick this up") and nothing from a flow |
 | C2 | "START" after STOP | Went to a care ticket | ✅ Resubscribes in CleverTap, "Welcome back" with the basket link |
 | C3 | Meta's "Stop promotions" button, "please stop", "unsubscribe me", "remove my number", "band karo" | Only a bare "stop" matched | ✅ STOP matched at the start of the message with all variants |
-| C4 | Typed "no" to a question with no "no" button (6.1, 6.3, 4.1) | Mapped to the last button: "Something went wrong", "Address trouble" | ✅ yes/no stand in for a tap only when the last button declines; otherwise "could you tap one of the options?" |
+| C4 | Typed "no" to a question with no "no" button (1.1, 1.3, 6.1) | Mapped to the last button: "Something went wrong", "Address trouble" | ✅ yes/no stand in for a tap only when the last button declines; otherwise "could you tap one of the options?" |
 | C5 | "Book 4–6 pm" tapped at 5 pm | The slot-gone case played the sold-out-babka copy | ✅ One `changed` fallback that covers both and re-lists slots |
 | C6 | Sold-out copy said "this afternoon", "since this morning", "came in fresh today" | Wrong when tapped next morning; the stock feed knows in or out, never when | ✅ Time words removed everywhere; a lint fails them |
-| C7 | 3.4 told someone who looked while it was already out that they "just missed it" | Reads as blame, and is false | ✅ "is sold out at Vasant Kunj, but…" (rewritten 22 Oct; still never "just missed it") |
+| C7 | 4.4 told someone who looked while it was already out that they "just missed it" | Reads as blame, and is false | ✅ "is sold out at Vasant Kunj, but…" (rewritten 22 Oct; still never "just missed it") |
 | C8 | "haan ji", "ok send", "theek hai bhejo", "nahi chahiye", हाँ, नहीं, ಹೌದು, అవును, ஆம், হ্যাঁ | All went to a care ticket | ✅ Yes/no read at the start of the message in Hinglish and five scripts |
 | C9 | "Wrong number", "galat number", "this isn't her"; "who is this?" | Handoff; the next template still went to the stranger | ✅ Wrong number unsubscribes and says so; "who is this" explains and offers WRONG NUMBER |
 | C10 | "Where is my order?", "kab aayega" from someone with a live order | "Care will reply in 2 working hours" | ✅ One line with the orders link |
@@ -79,12 +79,12 @@ Status: **✅ fixed** in this repo · **🟡 decision** needed, by whom · **�
 | C14 | "Within 2 working hours" read at 7:30 pm on Saturday | Customers read "2 hours"; it meant Monday | ✅ `{care_by}` and `{concierge_by}` filled from the IST clock: "by 11 am on Monday" |
 | C15 | A complaint ended with a sales line ("fruit and veg, picked for ripeness") | Selling past the complaint | ✅ Complaint endings are "whenever you're ready, your basket is here" |
 | C16 | 5.4 button "Book a slot for me" then "choose it yourself at checkout" | Expectation gap | ✅ "Pick a delivery day" and "shall we help you pick a slot" 🟡 ops: a real 48-h hold would allow "held until" |
-| C17 | 1.1 "Not this time" said "we'll write only when something new comes in", then day 64 and 70 went anyway | A promise the sequence breaks | ✅ Copy says "or your usual basket is ready to go"; wa_snooze_until scoped to category and basket messages |
+| C17 | 2.1 "Not this time" said "we'll write only when something new comes in", then day 64 and 70 went anyway | A promise the sequence breaks | ✅ Copy says "or your usual basket is ready to go"; wa_snooze_until scoped to category and basket messages |
 | C18 | Slot service returns no slots (store shut, Diwali day) | A list needs 1–10 rows, so nothing could be sent | ✅ Bot note: one line with the checkout link instead |
 | C19 | Deep-link token expired, or forwarded to someone else | A login wall, or account access from a forward | 📝 Token scoped to prefilling a basket, never login or payment 🟡 security: expiry (15 min to 30 days) |
 | C20 | Default address outside the sending store's radius | "is open ✅" then checkout refuses | 🟡 CleverTap: gate on address inside the radius, else the pickup variant |
 | C21 | Typed answer (email, "what were you looking for?") after a redeploy | In-memory state lost, answer lands in handoff | 📝 KV for bot state is now a launch dependency |
-| C22 | 2.3 "attach the spreadsheet" puts 60 people's names, addresses and phones in WhatsApp | Contradicts "addresses never in the chat" | 🟡 privacy/legal: accept the corporate exception or keep "email me a template" only |
+| C22 | 3.3 "attach the spreadsheet" puts 60 people's names, addresses and phones in WhatsApp | Contradicts "addresses never in the chat" | 🟡 privacy/legal: accept the corporate exception or keep "email me a template" only |
 | C23 | Email on file missing | Masked placeholder would render literally | ✅ Bot note: play "type it" straight away |
 | C24 | Photo, voice note or forward | "Got it" for something nobody read | ✅ Media handoff line: "we've passed your message to customer care, who will reply by …" |
 | C25 | "Can I pay cash?" | A ticket | 🟡 ops: state COD availability, then a one-line answer |
@@ -93,8 +93,8 @@ Status: **✅ fixed** in this repo · **🟡 decision** needed, by whom · **�
 | C28 | Tapped after buying the same item on the site today | A second unit could be added | 🟡 cart API: idempotent adds per SKU; `needs.what` to include "no order with this item since the template" |
 | C29 | Shared family phone sees "last year you sent 4 hampers" | Inherent to WhatsApp | 🟡 brand: accept; no recipient names are ever in the chat |
 | C30 | Customer wrote back to "Meher Sethi, Head of Guest Experience" and gets customer care | Voice hand-off | 🟡 brand: care replies "on Meher's behalf" |
-| C31 | 6.1 had no "the app or site failed" reason, the likeliest self-cancel | Forced into "something else" | ✅ Row added |
-| C32 | 3.3 macarons (egg) paired with matcha for a possibly vegan wellness buyer | Diet guard only covered carousels | ✅ Gate: the pairing is diet-guarded too |
+| C31 | 1.1 had no "the app or site failed" reason, the likeliest self-cancel | Forced into "something else" | ✅ Row added |
+| C32 | 4.3 macarons (egg) paired with matcha for a possibly vegan wellness buyer | Diet guard only covered carousels | ✅ Gate: the pairing is diet-guarded too |
 | C33 | UPI fails right after "is open ✅"; slot fills before payment | Copy already says the slot is theirs once they pay | 🔵 The site's retry UX; test on the sandbox |
 | C34 | Old WhatsApp client can't render a carousel or list | Lists are universal since 2021; carousels have the three-button fallback | 🔵 Gupshup sandbox on an old Android build |
 
@@ -102,14 +102,14 @@ Status: **✅ fixed** in this repo · **🟡 decision** needed, by whom · **�
 
 | # | Scenario | Consequence | Result |
 |---|---|---|---|
-| D1 | 6.2 goes to ~1,100 people in one batch; 30% reply, 15% say "my money isn't back" | ~50 payment tickets in three hours, each promised 2 working hours | ✅ `sendGates`: batches of 150 an hour, none after 5 pm, a 50-person canary first 🟡 care lead: team of 3, or "next working day" wording |
-| D2 | Diwali week stacks 2.1 callbacks, 2.3 tasks, 2.2 bulk calls and 1.4 fallbacks | ~90 concierge tasks in two days; the 4-hour alert fires en masse | 🟡 marketing: stagger 2.1/2.2/2.3 over three days, send 2.3 first and alone, two concierges |
-| D3 | 2.3 "the concierge will send last year's order here" | Needs a human agent seat on the Gupshup number; CleverTap's dashboard reply is single-message | 🟡 buy an agent seat or rewrite both lines as "will call you" (recommended) 📝 |
+| D1 | 1.2 goes to ~1,100 people in one batch; 30% reply, 15% say "my money isn't back" | ~50 payment tickets in three hours, each promised 2 working hours | ✅ `sendGates`: batches of 150 an hour, none after 5 pm, a 50-person canary first 🟡 care lead: team of 3, or "next working day" wording |
+| D2 | Diwali week stacks 3.1 callbacks, 3.3 tasks, 3.2 bulk calls and 2.4 fallbacks | ~90 concierge tasks in two days; the 4-hour alert fires en masse | 🟡 marketing: stagger 3.1/3.2/3.3 over three days, send 3.3 first and alone, two concierges |
+| D3 | 3.3 "the concierge will send last year's order here" | Needs a human agent seat on the Gupshup number; CleverTap's dashboard reply is single-message | 🟡 buy an agent seat or rewrite both lines as "will call you" (recommended) 📝 |
 | D4 | Anyone can POST to the webhook | Sends from the brand's number to any phone; can unsubscribe real customers | ✅ Secret in the callback URL (403 otherwise), malformed bodies ignored 🟡 Gupshup IP allow-list via support; a WAF rate limit on the path |
 | D5 | A login-grade deep-link token in a forwarded message | Account access | 📝 Token scoped to prefilling a basket only; checkout still asks for OTP |
 | D6 | Gupshup down mid-send | Customer's tap gets nothing, nobody told | ✅ `WA Send Failed` event with the node and index; delivery failures logged 🟡 who watches the alert |
 | D7 | A wrong CSV or mis-built segment reaches 1,000+ people | No stop between | ✅ Canary in `sendGates` 🟡 CleverTap: `dryRun=1` in staging |
-| D8 | 1.1/1.2 hold an item for every VIP sent, ~75% never tap | Three in four kept-aside items sit unsold | ✅ Gate: sends capped at 30% of stock; untapped holds released at 8 pm |
+| D8 | 2.1/2.2 hold an item for every VIP sent, ~75% never tap | Three in four kept-aside items sit unsold | ✅ Gate: sends capped at 30% of stock; untapped holds released at 8 pm |
 | D9 | 5.3 sends capped at slot capacity, but sends aren't orders; reminders accumulate | A third of the reach; the slot fills with reminders by month four | ✅ Gate: sends at 3× capacity, live reminders at capacity minus 20% |
 | D10 | A 10-unit threshold for all perishables | Blocks most cheese sends (a wheel is a handful of cuts) | ✅ Per category: bakery and produce 10, cheese 3, hampers 5 🟡 ops: confirm |
 | D11 | Store closed (holiday, flood) | "In at Lavelle Road today" on a shut day | ✅ `sendGates`: store open today and tomorrow; slot service returns nothing for closed days |
@@ -119,15 +119,15 @@ Status: **✅ fixed** in this repo · **🟡 decision** needed, by whom · **�
 | D15 | Hosting + new arrivals + after-the-feast in 21 days | 5.2's day-61 message slips to February | ✅ Priority order in `sendGates`: service, weekly reminder, hosting, new arrivals, after-the-feast; the loser is skipped, not delayed |
 | D16 | 18 profile properties named with no owner, type or expiry; two spellings of "cadence" | Nothing reads them | ✅ `PROPS` in `lib/bot.ts` with type and expiry; names normalised; the check script refuses unknown names 🟡 CleverTap admin owns them |
 | D17 | care_hold expires after 7 days | An unresolved complaint gets marketing on day 8 | 🟡 care lead: ticket-close only, plus a weekly report of holds older than 7 days |
-| D18 | Weekly reminder uses one of the two marketing slots a week | 5.1/4.3 silently skip for months unless the reminder outranks them | ✅ In the priority order |
+| D18 | Weekly reminder uses one of the two marketing slots a week | 5.1/6.3 silently skip for months unless the reminder outranks them | ✅ In the priority order |
 | D19 | Meta's per-user marketing cap in India (131049) drops sends silently | A capped message counts toward our caps | 📝 Journeys fall back to push or email and don't count it; expect 5–15% dropped |
-| D20 | 4.1 (utility, no STOP footer) vs 4.2 (marketing, droppable) as an A/B test | Measures category and deliverability as much as copy | 🟡 run both as marketing for the test, or call it a channel test |
+| D20 | 6.1 (utility, no STOP footer) vs 6.2 (marketing, droppable) as an A/B test | Measures category and deliverability as much as copy | 🟡 run both as marketing for the test, or call it a channel test |
 | D21 | 5.2 to the coldest audience; 1–3% blocks weigh on the quality rating | A drop pauses every template on the number | ✅ Gate: 200-person pilot, the rest only under 0.3% blocks and STOPs |
 | D22 | `weekly_basket` is a recurring prompt to buy | Meta will likely call it marketing: ≈₹40 per regular per year | 🟡 accept the cost (recommended) |
-| D23 | Templates where variables outnumber fixed words (1.3, 4.2, 4.3) | Rejected or reclassified | 📝 keep fixed words around each variable; submit with sample values; plain-text fallback approved |
+| D23 | Templates where variables outnumber fixed words (2.3, 6.2, 6.3) | Rejected or reclassified | 📝 keep fixed words around each variable; submit with sample values; plain-text fallback approved |
 | D24 | Typed complaints (health details, addresses) stored in CleverTap events | Personal data in a marketing processor | ✅ `WA Reply` no longer carries typed text 📝 handoff text to the care system, ticket id only, once a helpdesk exists |
 | D25 | No record of where WhatsApp opt-in came from (DPDP) | No consent trail | ✅ `sendGates`: opt-in with a recorded source and date |
-| D26 | 6.3 says "refunded in full on 22 Sept" from Magento's status | False if the gateway reversal failed | 🔵 reconcile Magento refunds against the gateway export for one month |
+| D26 | 1.3 says "refunded in full on 22 Sept" from Magento's status | False if the gateway reversal failed | 🔵 reconcile Magento refunds against the gateway export for one month |
 | D27 | "Real reactivation = second order within 45 days" isn't native to CleverTap | The deck's headline number can't be read | 🟡 analytics: weekly export and a 20-line script; decide now it's the number |
 | D28 | Control group by hash (sibling prototype) vs CleverTap's system control | Two mechanisms | 🟡 use CleverTap's system control at 10% |
 | D29 | Link clicks invisible without Gupshup click tracking | No funnel per node | ✅ UTM tags per flow and node on every link |
@@ -164,7 +164,7 @@ Load estimate (assumptions: 25% of marketing and 35% of utility recipients tap; 
 | E15 | Missing env var | Every tap silently answered with nothing | ✅ `GET` health check lists missing names |
 | E16 | Phone numbers in logs | PII in Vercel logs | ✅ Last four digits only |
 | E17 | "ha", "na" as yes/no | A laugh taps the first button | ✅ Dropped |
-| E18 | A document while 2.3 awaits the sheet | Went to handoff, never to `received` | ✅ Media while a flow has `received` plays it |
+| E18 | A document while 3.3 awaits the sheet | Went to handoff, never to `received` | ✅ Media while a flow has `received` plays it |
 | E19 | "yes" after a terminal node | A care ticket for a nod | ✅ One-line nod with the basket link |
 | E20 | `npm run check` blind spots: unreachable nodes, self-fallbacks, unknown property names | Would pass | ✅ Reachability, `needs.else !== id`, PROPS lint added |
 | E21 | Node ids with digits | Unparseable payload | ✅ Regex allows them |
@@ -180,7 +180,7 @@ Load estimate (assumptions: 25% of marketing and 35% of utility recipients tap; 
 |---|---|---|
 | Whether CleverTap's button payload reaches the webhook as `postbackText`, and which inbound shape this account sends | Account-level | One sandbox template send through CleverTap, tapped, raw JSON read |
 | Enterprise vs self-serve Gupshup account; who may own the callback | Account-level | Gupshup account manager |
-| Meta's approval and category for each of the 24 templates | Meta review | Submit all, plus the 6.1 marketing twin and the plain-text fallbacks |
+| Meta's approval and category for each of the 24 templates | Meta review | Submit all, plus the 1.1 marketing twin and the plain-text fallbacks |
 | CleverTap identity scheme | Account-level | A `dryRun=1` upload |
 | Gupshup send rate limit and STOP handling | Undocumented | Gupshup support |
 | Delivery on real handsets (carousels, lists, old clients) | Needs devices | Sandbox on three phones |
@@ -250,7 +250,7 @@ How it was tested: `npm run check` runs the AI's loop against a scripted model a
 | G53 | Supplements and look-alikes in search (collagen, plant protein, probiotic capsules, non-alcoholic wine, weaning food) | Reached the model | ✅ Filter extended 🟡 FoodStories: a category tag for restricted products, so the filter stops depending on names |
 | G54 | "₹175 for 2" for a line of two at ₹175 each | Misread | ✅ The basket gives `unit_price_inr` |
 | G55 | A Bandra customer told about Vasant Kunj's shelves | Mumbai's stores aren't on the website | ✅ For a store without online stock the AI says "on the website" 🟡 Confirm how Mumbai customers' stock should be read |
-| G56 | Typing a template's button title with no template sent ("Set one aside for me", 1.2's button since 22 Oct) | Claims the hold | 🟡 The title stands in for a payload CleverTap may drop (BOT.md question 2); settle that, then remove the fallback. `holds` passes until the stock services exist |
+| G56 | Typing a template's button title with no template sent ("Set one aside for me", 2.2's button since 22 Oct) | Claims the hold | 🟡 The title stands in for a payload CleverTap may drop (BOT.md question 2); settle that, then remove the fallback. `holds` passes until the stock services exist |
 | G57 | Hindi, Tamil and Bengali chats | The AI now answers in the customer's script; the fixed lines (when care replies, the disclosure) are English | 🟡 As G35 |
 | G58 | Claude Haiku 5.5 itself: answers, speed | Not run: no Anthropic key, and Gemini's free quota (500 a day on Flash-Lite, 20 on Flash) ran out | 🔵 `npm run pressure` with ANTHROPIC_API_KEY (about a cent), or with the Gemini key after its quota resets |
 
@@ -260,7 +260,7 @@ Round 3 in numbers: about 300 live scenarios (67 built-in; 87 by the flow agent,
 ## Verdict
 
 - Every flow is now honest about stock, slots, time and promises, and a customer who taps buttons gets a coherent, link-ended path every time; typed replies are read in Hinglish and five scripts, and consent (STOP, wrong number, START) holds across the bot.
-- The flows can run in week one for the three utility flows (4.1, 6.1, 6.3) and the carousels, throttled, with a canary. The VIP, gift and corporate flows wait on the gift-list page, the hold list, a concierge seat or a call-based 2.3, and two concierges.
+- The flows can run in week one for the three utility flows (6.1, 1.1, 1.3) and the carousels, throttled, with a canary. The VIP, gift and corporate flows wait on the gift-list page, the hold list, a concierge seat or a call-based 3.3, and two concierges.
 - The worst remaining risk is operational, not copy: the care SLA breaks on any batch day without three people or softer wording, and the concierge's Diwali two days need staggering.
 - The AI (round 3) answers typed messages in the customer's language from live catalogue data, picks the option they meant, and hands complaints to people; every reply passes `vet()` or the rules answer. Before it goes live: run `npm run pressure` on Claude Haiku 5.5, build the basket endpoint (BOT.md), have CleverTap tell the bot which template went out, and sign data-processing agreements.
-- Decide before sign-off: per-category stock thresholds, whether calendar flows count toward 3-in-21, care SLA wording and team size, CleverTap's system control at 10%, drop the emoji test, and the 2.3 agent seat versus calls.
+- Decide before sign-off: per-category stock thresholds, whether calendar flows count toward 3-in-21, care SLA wording and team size, CleverTap's system control at 10%, drop the emoji test, and the 3.3 agent seat versus calls.

@@ -1,11 +1,12 @@
 // The demo's typed messages, answered by the same AI as the webhook (lib/ai.ts) for the flow's sample customer, whose
-// basket is the sample in lib/store.ts; and a product card's "Add to basket" tap, which needs no AI. The AI is off
-// without a key; both are capped per visitor, since anyone who opens the demo can call them.
+// basket is the sample in lib/store.ts; a product card's "Add to basket" tap, which needs no AI; and a tap's stock
+// check (`needs.stock`), live from the catalogue. The AI is off without a key; all are capped per visitor, since anyone
+// who opens the demo can call them.
 import { addedTo } from "@/content/replies";
 import { aiOn, answer, type ChatLine, type ProviderConfig } from "@/lib/ai";
 import { flowByKey, storeOf } from "@/lib/bot";
 import { clean } from "@/lib/guardrails";
-import { addToBasket, inStockInstead, STORES, storeFor } from "@/lib/store";
+import { addToBasket, inStockInstead, stockAt, STORES, storeFor } from "@/lib/store";
 
 const CALLS_PER_HOUR = 60;
 const HOUR_MS = 3_600_000;
@@ -32,6 +33,13 @@ export async function POST(req: Request) {
   // stress test.
   const adding = str(body.add, 120);
   if (/^[\w-]+$/.test(adding)) return addFromCard(adding, store, stress);
+  // A tap's stock check: the products its node names, from the flow's own list, never the browser's.
+  const checking = str(body.check, 40);
+  const stock = Object.hasOwn(flow.nodes, checking) ? flow.nodes[checking][0].needs?.stock : undefined;
+  if (stock) {
+    const found = await stockAt(stock, store).catch(() => undefined);
+    return Response.json(found ? { ...found, store: storeFor(store).name } : {});
+  }
   if (!aiOn()) return Response.json({ kind: "fail", why: "off", tools: [] });
   if (!str(body.text, 1)) return new Response(null, { status: 400 });
   const history = historyFrom(body.history);

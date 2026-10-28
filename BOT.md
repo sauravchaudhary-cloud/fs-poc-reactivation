@@ -41,7 +41,7 @@ customer ──tap / text / photo──▶ Gupshup ──webhook──▶ app/ap
    bubble counts: a product card, or a node's second message. Anything promised for later (`bot:`
    notes that name a template) is a CleverTap journey on the event the bot records, sending an approved
    utility template: `weekly_basket`, `care_reply`, "running late", the sheet reminder, and
-   `back_in_stock` only where a stock feed can trigger it (3.4). Nothing promises stock on a date.
+   `back_in_stock` only where a stock feed can trigger it (4.4). Nothing promises stock on a date.
 5. **Consent.** STOP and its variants ("stop promotions", "unsubscribe me", "remove my number", "band
    karo"), and "wrong number", call CleverTap's Subscribe API (`Unsubscribe`), reply once, and put the
    phone on the bot's opted-out list; any later tap gets one line and nothing from a flow until START,
@@ -61,7 +61,7 @@ customer ──tap / text / photo──▶ Gupshup ──webhook──▶ app/ap
 7. **What the bot records** (CleverTap `/1/upload`, identity = `+` + phone in one function; [confirm
    the identity scheme with a `dryRun=1` upload]): `WA Reply {flow, node, option, choice}` on every node
    sent (`ai: true` when the AI picked the option), `WA AI Reply {flow, node, outcome, tools, why}` on every
-   AI answer (`outcome` say, handoff or fail: alert when fails climb), `WA Handoff {text, media}` (`text` is
+   AI answer, after the customer has it (`outcome` say, handoff or fail: alert when fails climb), `WA Handoff {text, media}` (`text` is
    the AI's summary when it handed off), `WA Escalation`, `WA Opt Out`, `WA Opt In`, `WA Wrong Number`,
    `WA Send Failed`, `WA Basket Add {store, added, out, missing}`, `WA Reminder Set {reminder_day, reminder_cadence}`, `WA Store Change {from, to}` (the customer's store property should follow it, so campaigns
    come from the new store). Journeys use them: a goal on `WA Reply` exits the journey; the profile properties
@@ -79,8 +79,10 @@ a flow's question ("kal shaam ko bhej do"), a complaint. Claude Haiku 5.5 with n
 
 - **Tools.** `search_products` and `get_basket` read; the basket is scoped to the phone the message came
   from, and search to its store (or another the customer asks about), never to anyone the model or the
-  customer names. `add_to_basket` adds products when they ask (or say yes to "Shall I add it?"), each by a product
-  page FoodStories showed (a search result, or a link in its own messages; never a link the customer typed), 1 to
+  customer names. A search's products reach the model with a ref (`p1`, `p2`…) instead of their page, and it
+  names products by ref in `reply.products` and `add_to_basket`: a page costs ~30 output tokens to write back, a
+  ref 3. `add_to_basket` adds products when they ask (or say yes to "Shall I add it?"), each by a product
+  FoodStories showed (a search result's ref, or a page in its own messages; never a link the customer typed), 1 to
   10 of each: the bot adds what's in stock and writes what went in, and for anything sold out by then, "you just
   missed it" and the two closest in-stock items (the store's top search matches for its name; never when it's
   back). The demo's Stress test sells out every other product mid-add: one sells out entirely, of two the first.
@@ -106,9 +108,11 @@ a flow's question ("kal shaam ko bhej do"), a complaint. Claude Haiku 5.5 with n
   action; only FoodStories topics (Meta's 2026 terms bar general-purpose assistants on the platform);
   the customer's own language (English, Hinglish, Hindi). The customer's text is fenced as data.
 - **What it may not send.** Every reply passes `vet()` in `lib/guardrails.ts` or isn't sent, and the rules
-  answer instead: banned deck words, a stock forecast, a deal, alcohol, an action or promise nobody takes
-  ("I've added", "I'll call"), a link off foodstories.shop, a number of three or more digits it wasn't
-  shown (a made-up price, phone or order number), over 1,000 characters. A handoff whose apology breaks a
+  answer instead: watching language ("we noticed"), a stock forecast, a deal, alcohol, an action or promise
+  nobody takes ("I've added", "I'll call"; an offer that waits on their answer is fine), a link off
+  foodstories.shop, a number of three or more digits it wasn't shown (a made-up price, phone or order
+  number), over 1,000 characters. Copy style ("team", label words, "shortly") is the prompt's to hold in the
+  prototype (28 Oct 2026); a launch adds its own guardrails. A handoff whose apology breaks a
   rule still hands off, with the standard line.
 - **Products as a carousel, one tap to the basket.** A reply that names products (an occasion, a budget,
   "exotic fruits") lists them in `reply.products`, and two to four of them go as one carousel under the
@@ -147,7 +151,8 @@ a flow's question ("kal shaam ko bhej do"), a complaint. Claude Haiku 5.5 with n
   Hills; `bengaluru` for Lavelle Road; `gurugram`; `mumbai_bandra`; `mumbai_lokhandwala` for Andheri West;
   the site's own codes, from `STORE_REGION_ID_MAP` in its scripts), no credentials. The site's map also has
   `mumbai_powai`, which the catalogue answers with an error (Oct 2026). Articles in the results (priced at
-  zero) are skipped.
+  zero) are skipped. Reads go as GET, which Magento answers from its cache, keyed by store (~0.2 s, against
+  ~0.6 s for a POST); the stock check as products go into the basket posts, past the cache.
   The customer and their basket need an endpoint FoodStories exposes (below); until then the basket is three
   real products, priced and stocked live.
 - **Before the AI, always.** A crisis ("I don't want to live", "mar jana hai", "जीने की इच्छा नहीं") outranks
@@ -171,8 +176,8 @@ a flow's question ("kal shaam ko bhej do"), a complaint. Claude Haiku 5.5 with n
 - **Why these rules** (sources in PRESSURE-TEST.md, section G): Meta's Business terms §4.7 (from 15 Jan
   2026) bar AI as the *primary* function, so the AI only helps with FoodStories; Meta's Commerce Policy
   keeps alcohol, supplements, infant formula and health claims off WhatsApp, so search results drop them
-  and `vet()` blocks health claims and label words ("100%", "pure", "healthy") the product data doesn't use
-  (saying it can't make the claim, "we can't call foods healthy", isn't one);
+  and `vet()` blocks health claims (label words like "pure" or "100%" are left to the prompt in the
+  prototype);
   the dark-pattern guidelines rule out false urgency; Anthropic's usage policy asks for AI disclosure at the
   start of a chat and its terms a caveat, so the first AI answer in a chat carries "_Automated assistant ·
   prices and stock confirmed at checkout_" (a footer on link messages); DPDP and the SPDI Rules ask for minimisation, so phone, OTP, card and order numbers, emails and
@@ -199,6 +204,18 @@ overrides the model. `GET /api/whatsapp` reports `ai: true|false`.
 Claude-only fields (`cache_control`, `effort`) are sent only when `AI_MODEL` names a Claude model. The
 demo's `/api/chat` takes its chat history from the browser and spends the same key: keep the demo on a
 private URL, or without a key, once a production key is set.
+
+**Speed** (measured 26 Oct 2026, Haiku 5.5, from India). A typed message takes one to three model calls of
+~1–2.5 s each, plus ~0.2–0.8 s per catalogue lookup. Output tokens are the slow part. What made a difference:
+products by ref (a four-product reply went from 280 output tokens to 147), the catalogue's cached GET, and not
+repeating a customer's budget (it failed `vet` twice, then handed off: 6–8 s for no answer; the retry now names
+the number). Every round counts, so a broad ask searches specific products in parallel in the first round
+("exotic fruits" matched juice and granola, and cost a second round every time), and the model doesn't restate
+a hold an earlier message made (`vet` blocks it, which cost a retry). What didn't, so it's left alone: turning thinking off (at `effort: "low"` Haiku already skips it
+on most turns), caching or pre-warming the prompt for speed (a cold 5.8K-token prefill was as fast as a cached
+one; the cache stays, for cost), and a client per request (the SDK shares Node's connection pool). WhatsApp
+can't stream a reply, so the lever left is the typing indicator (open question 9). The demo shows an AI answer
+as soon as it's in: the wait was the typing.
 
 **What FoodStories' developers expose for the basket.** One service, server to server, bearer key in
 `FOODSTORIES_API_KEY`, at `FOODSTORIES_API_URL`:
@@ -238,7 +255,7 @@ token out of the bot: it holds only the service's bearer key.
 - A link can be opened days after it was sent, so the chat never vouches for what the basket page will
   show. The basket page shows live stock for their store, greys out anything that has sold out since, and
   suggests the closest item. The bot sends a `/basket` link only when the basket has at least one line in
-  stock; otherwise it links the flow's aisle (1.1 "Not this time" shows the pattern).
+  stock; otherwise it links the flow's aisle (2.1 "Not this time" shows the pattern).
 
 ## What has to exist before launch
 
@@ -249,14 +266,14 @@ token out of the bot: it holds only the service's bearer key.
 | Slot service: open slots, capacity, optional 48-h hold | every slot list and "is open ✅" | rows stay literal; "held" must never be said |
 | Store hold list (POS note), released at 8 pm if untapped | kept aside, first pick | the physical promise can't be kept |
 | Care ticketing with a close webhook | `putRight`, money, sourcing, handoff, escalation | `care_hold_until` runs its 7 days |
-| Concierge task queue with a 4-hour alert, and an agent seat or a call-based rewrite of 2.3 | every "will call you", "will send last year's order here" | nobody calls; nobody can reply from the number |
-| Gift-list page with the recipients of their last gift order | 1.4, 2.1 | those nodes fall back to a concierge call |
-| Buyers' map of search terms to an aisle and the closest in-stock items | 3.5 | the template must not go |
+| Concierge task queue with a 4-hour alert, and an agent seat or a call-based rewrite of 3.3 | every "will call you", "will send last year's order here" | nobody calls; nobody can reply from the number |
+| Gift-list page with the recipients of their last gift order | 2.4, 3.1 | those nodes fall back to a concierge call |
+| Buyers' map of search terms to an aisle and the closest in-stock items | 4.5 | the template must not go |
 | KV for the bot's `last`, `seen`, opted-out state and the AI's chat history | typed answers (email, "what were you looking for?") after a redeploy or on a second instance | a typed answer lands in handoff; the AI forgets the chat |
 | The customer and basket endpoint above (a Magento integration that reads, adds to and moves a basket) | the AI's `get_basket`, `add_to_basket` and `change_store`, and the customer's name and store | the AI shows a sample basket in the demo and only simulates adds and moves; in production, turn `get_basket`, `add_to_basket` and `change_store` off until it exists |
 | A CleverTap journey webhook telling the bot which template went to whom | the AI understanding a typed reply to a template ("is it fresh?") | the AI asks what they mean, or looks it up |
 | An Anthropic API key, and a data-processing agreement covering it (DPDP: the store is liable for its processor) | every AI reply | typed text goes to the rules and to people, as before |
-| Utility templates approved: weekly_basket, care_reply, running late, sheet reminder (back_in_stock only with a stock feed); a marketing twin of 6.1 | every later promise | the window closes and the promise is silent |
+| Utility templates approved: weekly_basket, care_reply, running late, sheet reminder (back_in_stock only with a stock feed); a marketing twin of 1.1 | every later promise | the window closes and the promise is silent |
 
 ## Open questions for the Gupshup and CleverTap accounts
 

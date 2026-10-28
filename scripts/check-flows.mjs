@@ -67,13 +67,12 @@ function checkSegments() {
 // What a flow says about itself (presenter notes, the send-time gate, what it's built on), what its template offers,
 // and what none of its copy may say.
 function checkFlow(flow) {
+  // Its words, without the ids it carries (product page keys, addresses): "gluten-free" in a key promises nothing.
+  const words = JSON.stringify(flow, (key, value) => (key === "stock" || key === "url" ? undefined : value));
   assert.ok(flow.why.length > 0, `${flow.name}: add presenter notes`);
   assert.ok(flow.gate.length > 0, `${flow.name}: say what CleverTap checks at send`);
   assert.ok(flow.signal && flow.category, `${flow.name}: say which behaviour and category it's built on`);
-  assert.ok(
-    !RM.test(JSON.stringify(flow)),
-    `${flow.name}: messages come from the store or the Head of Guest Experience, not an RM`,
-  );
+  assert.ok(!RM.test(words), `${flow.name}: messages come from the store or the Head of Guest Experience, not an RM`);
   assert.ok(flow.start.buttons || flow.start.cards, `${flow.name}: the template needs something to tap`);
   // A utility template needs no opt-out line, and a carousel has no footer to carry one.
   const marketing = !/utility/.test(flow.who);
@@ -82,7 +81,7 @@ function checkFlow(flow) {
       /Reply STOP/.test(flow.start.footer ?? ""),
       `${flow.name}: a marketing template needs "Reply STOP to opt out" in the footer`,
     );
-  const freebie = JSON.stringify(flow).match(FREE);
+  const freebie = words.match(FREE);
   assert.ok(!freebie, `${flow.name}: promises something free ("${freebie}"), which needs sign-off first`);
 }
 

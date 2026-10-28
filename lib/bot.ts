@@ -21,7 +21,10 @@ export type Msg = {
   link?: { label: string; url: string }; // call-to-action URL button
   cards?: { photo: Photo; text: string; buttons: Option[] }[]; // a carousel: a template's, or the AI's product picks (inside the 24-hour window)
   typed?: string; // node a typed reply goes to; otherwise it is handed to customer care
-  needs?: { what: string; else: string }; // on a node's first message: verified by the bot at tap time, else it plays that node
+  // On a node's first message: verified by the bot at tap time, else it plays that node. `stock`: the products (page
+  // keys) the check reads live from the catalogue at the flow's store, in the demo; the webhook's checks pass until
+  // their services exist (lib/whatsapp.ts).
+  needs?: { what: string; else: string; stock?: string[] };
   bot?: string; // what the bot does or records when it sends this
 };
 
@@ -41,6 +44,8 @@ export type Flow = {
 };
 
 export const flowByKey = (key: string) => flows.find((flow) => flow.key === key);
+// A flow's code, as the demo and the docs number it: its segment, then its place in that segment (2.1).
+export const flowCode = (flow: Flow) => `${flow.n}.${flows.filter((f) => f.n === flow.n).indexOf(flow) + 1}`;
 
 // What a tap sends back (Gupshup postbackText, CleverTap's custom button payload): flow key, node, option. Under 128 chars.
 const PAYLOAD = /^([a-z0-9-]+):([a-z0-9_]+):(\d+)$/;

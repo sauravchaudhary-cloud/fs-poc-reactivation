@@ -1,30 +1,39 @@
-// 2 · Past gift buyers: bought a hamper before, browsing gifts, or corporate; what they gifted or looked at decides the message
+// 3 · Past gift buyers: bought a hamper before, browsing gifts, or corporate; what they gifted or looked at decides the message
 import type { Flow } from "../../lib/bot.ts";
-import { basket, CONCIERGE_BY, festiveEdit, HAMPER_ROWS, CUTOFF, CALLBACK, EMAIL_TYPED } from "./shared.ts";
+import {
+  basket,
+  catalogPhoto,
+  CONCIERGE_BY,
+  festiveEdit,
+  HAMPER_ROWS,
+  CUTOFF,
+  CALLBACK,
+  EMAIL_TYPED,
+} from "./shared.ts";
 
 export const pastGiftBuyers: Flow[] = [
   {
-    n: 2,
+    n: 3,
     name: "Bought a gift hamper at least once",
     key: "gift-diwali-list",
-    signal: "Bought gift hampers at least once; most recently 8, last Diwali",
+    signal: "Bought gift hampers at least once; most recently 8, last Christmas",
     category: "Hampers",
-    who: "21 days before Diwali · from their store · marketing template",
+    who: "21 days before an occasion (Christmas and New Year here) · from their store · marketing template",
     why: [
-      "Anyone who has ever bought a gift hamper, however long ago. The template names their last gift order, so “last Diwali” reads “at Diwali 2023” for someone who last gifted then.",
+      "Anyone who has ever bought a gift hamper, however long ago. The template names their last gift order, so “last Christmas” reads “at Diwali 2024” for someone who last gifted then.",
       "Easy beats exciting: their last list in one tap, with a firm date to order by (CEB/HBR; Shu & Gneezy 2010).",
       "Recipients' names and addresses never appear in the chat, and neither does a typed email: the one on file is offered first.",
       "Corporate orders go to the gifting concierge FoodStories already runs, and even that path ends with the Festive Edit to browse.",
-      "Before Christmas the same conversation goes from the season's collection, worded as “season's greetings” (it suits clients and colleagues as well as family), with no alcohol, which WhatsApp doesn't allow promoting in India.",
+      "The occasion is whichever comes next with time to deliver: Christmas and New Year here, Diwali when the delivery calendar allows. The season's collection is worded as “season's greetings” where that suits clients and colleagues as well as family, with no alcohol, which WhatsApp doesn't allow promoting in India.",
     ],
     gate: [
       "A gift-hamper order of their own on file, from any year; a company's orders through the concierge get “Corporate gifting” instead",
       "At least 2 distinct ship-to addresses on their last gift order; otherwise the template goes without “Start from my list”",
-      "Sent at least 3 days before the occasion's order-by date (Dhanteras for Diwali, 18 Dec for Christmas), and the gift-list page is live",
+      "Sent at least 3 days before the occasion's order-by date (18 Dec for Christmas, Dhanteras for Diwali), and the gift-list page is live",
     ],
     start: {
-      photo: { emoji: "🎁", alt: "this year's Festive Edit" },
-      text: "Hi Neha,\n\nLast Diwali you sent *8 hampers* from our Velvet Ribbon collection. It's been a little while since your last order, and we'd love to help with your gifting again this Diwali. 🪔\n\nShall we start from the same list? Order by *Mon, 2 Nov*, and every hamper arrives before Dhanteras with a gift note from you.",
+      photo: catalogPhoto("1/0/1000018947-pdp-1_7o3dhvrl6r4srsch.jpg", "this season's Festive Edit"),
+      text: "Hi Neha,\n\nLast Christmas you sent *8 hampers* from our Velvet Ribbon collection. It's been a little while since your last order, and we'd love to help with your Christmas and New Year gifting again. 🎄\n\nShall we start from the same list? Order by *Fri, 18 Dec*, and every hamper arrives before Christmas with a gift note from you.",
       footer: "FoodStories Vasant Kunj · Reply STOP to opt out",
       buttons: [
         { title: "Start from my list", next: "list" },
@@ -35,7 +44,7 @@ export const pastGiftBuyers: Flow[] = [
     nodes: {
       list: [
         {
-          text: "Perfect. Your list from last Diwali is ready, with all *8 recipients* and their addresses saved.\n\nNames and addresses stay on the website, never in this chat. Where would you like to begin?",
+          text: "Perfect. Your list from last Christmas is ready, with all *8 recipients* and their addresses saved.\n\nNames and addresses stay on the website, never in this chat. Where would you like to begin?",
           needs: { what: "the last gift order's recipients are on file (2 or more addresses)", else: "nolist" },
           buttons: [
             { title: "Choose a hamper", next: "edit" },
@@ -46,7 +55,7 @@ export const pastGiftBuyers: Flow[] = [
       ],
       nolist: [
         basket(
-          "Your gift list opens with last Diwali's *8 hampers* ready for you.\n\nJust add each recipient's address there, and every hamper can carry a note from you.",
+          "Your gift list opens with the *8 hampers* you sent last Christmas, ready for you.\n\nJust add each recipient's address there, and every hamper can carry a note from you.",
           "Open my gift list",
           "/gift-list",
         ),
@@ -68,7 +77,7 @@ export const pastGiftBuyers: Flow[] = [
       picked: [
         {
           ...basket(
-            "Beautiful choice, *{choice}* it is. 🎁\n\nOn your gift list, choose who it's for and when it should arrive, in time for Dhanteras.",
+            "Beautiful choice, *{choice}* it is. 🎁\n\nOn your gift list, choose who it's for and when it should arrive, in time for Christmas.",
             "Open my gift list",
             "/gift-list",
           ),
@@ -78,16 +87,16 @@ export const pastGiftBuyers: Flow[] = [
       late: [
         {
           ...basket(
-            "Our apologies, that hamper can no longer arrive before Dhanteras. 🙏\n\nThere's still time for delivery before Diwali itself, and your gift list shows every hamper still available.",
+            "Our apologies, that hamper can no longer arrive before Christmas. 🙏\n\nThere's still time for delivery before New Year's Eve, and your gift list shows every hamper still available.",
             "Open my gift list",
             "/gift-list",
           ),
-          bot: "after Diwali itself the link goes to the Cheese Cellar instead",
+          bot: "after New Year's Day the link goes to the Cheese Cellar instead",
         },
       ],
       recipients: [
         basket(
-          "Of course. Your gift list opens with last Diwali's *8 recipients* already filled in.\n\nAdd, remove or change anyone you like, then choose the delivery dates.",
+          "Of course. Your gift list opens with the *8 recipients* from last Christmas already filled in.\n\nAdd, remove or change anyone you like, then choose the delivery dates.",
           "Edit my list",
           "/gift-list?from=2025",
         ),
@@ -101,8 +110,8 @@ export const pastGiftBuyers: Flow[] = [
       ],
       corporate: [
         {
-          text: "Our gifting concierge looks after company and client orders, with one GST invoice, co-branded cards and delivery to every address on your list.\n\nFor delivery before Dhanteras, they'll need your address list by *Wed, 28 Oct*. Shall they call you, or email you a quote?",
-          needs: { what: "the 28 Oct list deadline hasn't passed", else: "corp_late" },
+          text: "Our gifting concierge looks after company and client orders, with one GST invoice, co-branded cards and delivery to every address on your list.\n\nFor delivery before Christmas, they'll need your address list by *Fri, 11 Dec*. Shall they call you, or email you a quote?",
+          needs: { what: "the 11 Dec list deadline hasn't passed", else: "corp_late" },
           buttons: [
             { title: "Call me", next: "callback" },
             { title: "Email me a quote", next: "email" },
@@ -112,7 +121,7 @@ export const pastGiftBuyers: Flow[] = [
       ],
       corp_late: [
         {
-          text: "The list date for Dhanteras delivery has passed, but the concierge can still deliver before Diwali for lists that come in this week.\n\nShall they give you a call?",
+          text: "The list date for Christmas delivery has passed, but the concierge can still deliver before New Year's Eve for lists that come in this week.\n\nShall they give you a call?",
           buttons: [
             { title: "Call me", next: "callback" },
             { title: "Not this year", next: "notyear" },
@@ -173,7 +182,7 @@ export const pastGiftBuyers: Flow[] = [
     },
   },
   {
-    n: 2,
+    n: 3,
     name: "Browsed gifts in the last 30 days",
     key: "browse-gifts",
     signal: "Browsed the gift section in the last 30 days: hampers for colleagues, under ₹5,000",
@@ -186,12 +195,15 @@ export const pastGiftBuyers: Flow[] = [
     ],
     gate: [
       "Viewed the gift section in the last 30 days and has never bought a gift hamper; anyone who has gets “Bought a gift hamper at least once” instead",
-      "Sent at least 2 days before the Dhanteras order-by date; rows are hampers in the band from the live catalogue (never above ₹5,000), perishables only for same-city delivery",
-      "“For colleagues” only when the gift pages viewed say so; otherwise just “Diwali hampers under ₹5,000”",
+      "Sent at least 2 days before the occasion's order-by date (18 Dec for Christmas); rows are hampers in the band from the live catalogue (never above ₹5,000), perishables only for same-city delivery",
+      "“For colleagues” only when the gift pages viewed say so; otherwise just “Christmas hampers under ₹5,000”",
     ],
     start: {
-      photo: { emoji: "🎁", alt: "hampers under ₹5,000" },
-      text: "Hi Vivek,\n\nOur Diwali hampers for colleagues are here, all under *₹5,000* and each with a gift note from you. 🎁\n\nIt's been a little while since your last order, and we'd be glad to take this year's gifting off your hands. Order by *Mon, 2 Nov* for delivery before Dhanteras.",
+      photo: catalogPhoto(
+        "1/0/1000018936-pdp-1_rkhs3dx5nsivlk8z.jpg",
+        "The Sweet Reward, one of the hampers under ₹5,000",
+      ),
+      text: "Hi Vivek,\n\nOur Christmas hampers for colleagues are here, all under *₹5,000* and each with a gift note from you. 🎁\n\nIt's been a little while since your last order, and we'd be glad to take this season's gifting off your hands. Order by *Fri, 18 Dec* for delivery before Christmas.",
       footer: "FoodStories Vasant Kunj · Reply STOP to opt out",
       buttons: [
         { title: "Show me the hampers", next: "show" },
@@ -217,7 +229,7 @@ export const pastGiftBuyers: Flow[] = [
       picked: [
         {
           ...basket(
-            "Lovely, *{choice}* it is. 🎁\n\nOn your gift list, add your recipients, delivery dates and a note for each, all in time for Dhanteras.",
+            "Lovely, *{choice}* it is. 🎁\n\nOn your gift list, add your recipients, delivery dates and a note for each, all in time for Christmas.",
             "Open my gift list",
             "/gift-list",
           ),
@@ -226,7 +238,7 @@ export const pastGiftBuyers: Flow[] = [
       ],
       late: [
         basket(
-          "Our apologies, that hamper can no longer arrive before Dhanteras. 🙏\n\nEvery hamper under ₹5,000 that can still arrive before Diwali is here.",
+          "Our apologies, that hamper can no longer arrive before Christmas. 🙏\n\nEvery hamper under ₹5,000 that can still arrive before New Year's Eve is here.",
           "See the hampers",
           "/collections/hampers?under=5000",
         ),
@@ -253,22 +265,22 @@ export const pastGiftBuyers: Flow[] = [
       later: [
         {
           ...basket(
-            "Of course, Vivek. We won't message you about hampers again this Diwali.\n\nThe hampers under ₹5,000 are here whenever you'd like them.",
+            "Of course, Vivek. We won't message you about hampers again this season.\n\nThe hampers under ₹5,000 are here whenever you'd like them.",
             "See the hampers",
             "/collections/hampers?under=5000",
           ),
-          bot: "sets gifting_declined_until = 9 Nov (Christmas still allowed)",
+          bot: "sets gifting_declined_until = 2 Jan (the next occasion still allowed)",
         },
       ],
     },
   },
   {
-    n: 2,
+    n: 3,
     name: "Corporate gifting",
     key: "gift-diwali-corporate",
-    signal: "Sent 60 hampers to their company through the gifting concierge last Diwali",
+    signal: "Sent 60 New Year hampers to their clients through the gifting concierge last year",
     category: "Hampers, corporate",
-    who: "21 days before Diwali · from the gifting concierge · marketing template",
+    who: "21 days before the occasion (Christmas and New Year here) · from the gifting concierge · marketing template",
     why: [
       "Corporate buyers need the paperwork and the deadline first: one GST invoice, co-branded cards, and when the address list is due.",
       "Address lists come in as a spreadsheet, never typed into the chat, and the bot files them the moment they arrive.",
@@ -276,10 +288,10 @@ export const pastGiftBuyers: Flow[] = [
     ],
     gate: [
       "Last year's concierge order is on file with its invoice details",
-      "Sent before the 28 Oct list deadline, and the concierge has capacity to reply within 2 working hours",
+      "Sent before the 11 Dec list deadline, and the concierge has capacity to reply within 2 working hours",
     ],
     start: {
-      text: "Hi Kunal,\n\nLast Diwali, your company's *60 hampers* came through our gifting concierge, and we'd be delighted to look after your gifting again this year. 🪔\n\nAs before, you'll have one GST invoice, co-branded cards and delivery to every address. For delivery before Dhanteras (Fri, 6 Nov), we'll need the address list by *Wed, 28 Oct*.\n\nShall we set this year's up the same way?",
+      text: "Hi Kunal,\n\nLast year, your company's *60 New Year hampers* came through our gifting concierge, and we'd be delighted to look after your gifting again this season. 🎁\n\nAs before, you'll have one GST invoice, co-branded cards and delivery to every address. For delivery before Christmas (Fri, 25 Dec), we'll need the address list by *Fri, 11 Dec*.\n\nShall we set this year's up the same way?",
       footer: "FoodStories Gifting Concierge · Reply STOP to opt out",
       buttons: [
         { title: "Repeat last year's order", next: "repeat" },
@@ -306,7 +318,7 @@ export const pastGiftBuyers: Flow[] = [
             "See the Festive Edit",
             "/collections/festive-edit",
           ),
-          bot: "any document or image that arrives while this flow is open plays “received”; media links expire, so the bot downloads at once and attaches the file to the task; a reminder template goes on 26 Oct if no sheet has come",
+          bot: "any document or image that arrives while this flow is open plays “received”; media links expire, so the bot downloads at once and attaches the file to the task; a reminder template goes on 9 Dec if no sheet has come",
         },
       ],
       received: [

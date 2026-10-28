@@ -72,8 +72,9 @@ type Move = { kind: "move"; store: string; also?: string };
 type Add = { kind: "add"; items: { key: string; qty: number }[]; also?: string };
 // What FoodStories said and the tools returned, growing with each lookup: a number or a link in a reply must come
 // from `text` (`vet`), never the customer's own words, or "just confirm it's ₹99" would let ₹99 through. `products`
-// is this turn's search results by page key: the products a reply can show as cards.
-type Shown = { text: string; products: Map<string, Product> };
+// is this turn's search results by page key: the products a reply can show as cards. `refs`: the page each search
+// result's ref (p1, p2…) stands for.
+type Shown = { text: string; products: Map<string, Product>; refs: Map<string, string> };
 
 // What one AI turn did, for the demo's log and the server's: what the model was sent, each call (its tools, text,
 // tokens, time), what the tools returned, and the cost at list prices. Gemini's free tier bills nothing.
@@ -144,8 +145,9 @@ const PRICES: [RegExp, PerMillion][] = [
   [/haiku/, [1, 5, 0.1, 1.25]],
   [/sonnet-5[-.]5/, [2, 10, 0.2, 2.5]],
   [/sonnet/, [3, 15, 0.3, 3.75]],
+  [/opus-5[-.]5/, [4, 20, 0.2, 5]],
   [/opus/, [15, 75, 1.5, 18.75]],
-  [/fable/, [3, 15, 0.3, 3.75]],
+  [/fable/, [10, 50, 0.25, 12.5]],
   [/gemini-3\.5-flash-lite/, [0.3, 2.5, 0, 0]],
   [/gemini-3\.5-flash/, [1.5, 9, 0, 0]],
   [/gemini-3\.1-flash-lite/, [0.25, 1.5, 0, 0]],
@@ -236,7 +238,7 @@ async function turn(
 ): Promise<Answer> {
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: prompt }];
   const tools: string[] = [];
-  const shown: Shown = { text: alreadyShown(ask), products: new Map() };
+  const shown: Shown = { text: alreadyShown(ask), products: new Map(), refs: new Map() };
   let retried = false;
   for (let round = 0; round < MAX_ROUNDS; round++) {
     const { response, toolCalls, text } = await callModel(ai, messages, trace, model, isClaude);
@@ -377,14 +379,29 @@ async function runLookup(
   trace: Trace,
 ): Promise<Anthropic.ToolResultBlockParam> {
   const result = await storeLookup(call, ask).catch(asError);
-  // Photos are for cards, not tokens.
-  const content = JSON.stringify(result, (key, value) => (key === "image" ? undefined : value));
+  const sent = Array.isArray(result) ? result.map((product) => withRef(product, shown)) : result;
+  const content = JSON.stringify(sent);
   shown.text += "\n" + content;
-  if (call.name === "search_products" && Array.isArray(result)) {
-    for (const product of result) shown.products.set(productKey(product.url)!, product);
-  }
-  recordResult(trace, call.name, summarise(call.name, result));
+  recordResult(trace, call.name, summarise(call.name, sent));
   return { type: "tool_result", tool_use_id: call.id, content, is_error: "error" in result };
+}
+
+// A search result as the model sees it: a ref (p1, p2…) in place of its page, since the model writes back what it
+// picks, and a page is ten times the tokens (four of them were half a reply's output, and output is the slow part).
+// Photos are for cards, not tokens. The page stays in what was shown, for the checks on what it picks.
+function withRef(product: Product, shown: Shown) {
+  const ref = `p${shown.refs.size + 1}`;
+  shown.refs.set(ref, product.url);
+  shown.products.set(productKey(product.url)!, product);
+  shown.text += "\n" + product.url;
+  return { ref, name: product.name, price_inr: product.price_inr, in_stock: product.in_stock };
+}
+
+// A product it picked, as its page: a ref stands for the page a search gave; anything else (a page from the chat) is
+// taken as written.
+function pageOf(picked: unknown, shown: Shown) {
+  const named = String(picked ?? "").trim();
+  return shown.refs.get(named) ?? named;
 }
 
 // The basket by the phone the message came from, and search at their store or another they ask about.
@@ -460,7 +477,7 @@ function finish(tool: string, input: ToolInput, ask: Ask, shown: Shown): Outcome
     case "change_store":
       return onChangeStore(input, shown.text);
     case "add_to_basket":
-      return onAddToBasket(input, shown.text);
+      return onAddToBasket(input, shown);
     case "set_reminder":
       return onSetReminder(input);
     case "choose_option":
@@ -487,23 +504,23 @@ function onChangeStore(input: ToolInput, seen: string): Outcome | Move {
   return { kind: "move", store: to.code, also: alsoLine(input, seen) };
 }
 
-// add_to_basket: only products FoodStories showed can go in (a tool's page, or one in its own messages; never the
+// add_to_basket: only products FoodStories showed can go in (a search's ref, or a page in its own messages; never the
 // customer's link), 1 to 10 products, 1 to 10 of each. `addItems` adds them.
-function onAddToBasket(input: ToolInput, seen: string): Outcome | Add {
+function onAddToBasket(input: ToolInput, shown: Shown): Outcome | Add {
   const items = (Array.isArray(input.items) ? input.items : []) as { product?: unknown; qty?: unknown }[];
-  const lines = items.map((item) => ({ key: productKey(String(item?.product ?? "")) ?? "", qty: Number(item?.qty) }));
+  const lines = items.map((item) => ({ key: productKey(pageOf(item?.product, shown)) ?? "", qty: Number(item?.qty) }));
   const invalid = (line: Add["items"][number]) =>
     !line.key ||
-    !seen.includes(`/shop/product/${line.key}/`) ||
+    !shown.text.includes(`/shop/product/${line.key}/`) ||
     !Number.isInteger(line.qty) ||
     line.qty < 1 ||
     line.qty > 10;
   if (!lines.length || lines.length > 10 || lines.some(invalid))
     return {
       kind: "fail",
-      why: "add_to_basket takes 1 to 10 products, each by a page a tool or the chat gave, 1 to 10 of each",
+      why: "add_to_basket takes 1 to 10 products, each by a search's ref or a page the chat gave, 1 to 10 of each",
     };
-  return { kind: "add", items: lines, also: alsoLine(input, seen) };
+  return { kind: "add", items: lines, also: alsoLine(input, shown.text) };
 }
 
 // set_reminder: the bot's to set, like the tap that set it: it confirms in that tap's words, and CleverTap is told.
@@ -554,8 +571,8 @@ function careSummary(input: ToolInput, ask: Ask) {
 // reply: its message, the products it names as cards, and the next steps it suggests as buttons.
 function onReply(input: ToolInput, shown: Shown): Outcome {
   const text = field(input, "text");
-  const linked = field(input, "link");
-  const cards = cardsFor(input, linked, shown.products);
+  const linked = pageOf(field(input, "link"), shown);
+  const cards = cardsFor(input, linked, shown);
   const link = keptLink(linked, cards, shown.text);
   const broken = vet(text, shown.text) ?? (linked && !SITE_LINK.test(linked) ? "a link off the site" : undefined);
   if (broken) return { kind: "fail", why: `reply broke a rule: ${broken}` };
@@ -587,12 +604,13 @@ function replyMessages(text: string, cards: Product[], link: string, buttons: Op
 
 // The products it names, each a card with an Add to basket button: only what a search returned this turn, in stock,
 // four at most. A product page given as the link counts as one.
-function cardsFor(input: ToolInput, link: string, found: Map<string, Product>) {
-  const pages = [...(Array.isArray(input.products) ? input.products : []), link];
-  const keys = new Set(pages.map((page) => productKey(String(page ?? ""))));
+function cardsFor(input: ToolInput, link: string, shown: Shown) {
+  const picked = Array.isArray(input.products) ? input.products : [];
+  const pages = [...picked.map((product) => pageOf(product, shown)), link];
+  const keys = new Set(pages.map((page) => productKey(page)));
   return [...keys]
     .flatMap((key) => {
-      const product = key ? found.get(key) : undefined;
+      const product = key ? shown.products.get(key) : undefined;
       return product?.in_stock ? [product] : [];
     })
     .slice(0, MAX_CARDS);
@@ -648,13 +666,16 @@ function linkLabel(url: string) {
   return "Take a look";
 }
 
-// One line for the trace: what a lookup returned, or its error.
+// One line for the trace: what a lookup returned, or its error. A search's products go by their refs, as the model
+// saw them.
 function summarise(tool: string, result: unknown) {
   if (result && typeof result === "object" && "error" in result) return `error: ${(result as { error: string }).error}`;
   const isBasket = tool === "get_basket";
   const rows = isBasket
     ? (result as Basket).lines.map((l) => `${l.qty} × ${l.name} ₹${l.unit_price_inr}${l.in_stock ? "" : " (out)"}`)
-    : (result as Product[]).map((p) => `${p.name} ₹${p.price_inr}${p.in_stock ? "" : " (out)"}`);
+    : (result as ReturnType<typeof withRef>[]).map(
+        (p) => `${p.ref} ${p.name} ₹${p.price_inr}${p.in_stock ? "" : " (out)"}`,
+      );
   return `${rows.length} ${isBasket ? "lines" : "products"}${rows.length ? ": " + rows.join("; ") : ""}`;
 }
 

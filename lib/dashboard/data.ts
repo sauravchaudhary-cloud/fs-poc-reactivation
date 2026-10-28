@@ -380,8 +380,8 @@ const CALL_DAYS = 14; // in the calls-a-day series
 // The call lists, in the order the customer list puts them first.
 const LIST_ORDER = ["due", "hot", "unhappy", "vip"];
 // Segment numbers, as in content/flows.
-const LAPSED_VIPS = 1;
-const SERVICE_BRUISED = 6;
+const SERVICE_BRUISED = 1;
+const LAPSED_VIPS = 2;
 
 // The query string is untrusted: anything unknown falls back to its default.
 export function parseFilters(query: Record<string, string | string[] | undefined>) {
@@ -719,12 +719,12 @@ const SURNAMES = [
 // Per segment: customers per flow; [reply rate, basket after reply, first order after basket, second after first, the
 // control group's own first-order rate]; average order ₹; opt-out rate; and past orders, fewest to most.
 const SAMPLE: Record<number, SampleSegment> = {
-  1: [60, [0.4, 0.48, 0.6, 0.7, 0.05], 3400, 0.004, [10, 25]],
-  2: [220, [0.34, 0.42, 0.55, 0.6, 0.03], 5200, 0.006, [1, 4]],
-  3: [130, [0.26, 0.35, 0.4, 0.62, 0.02], 2100, 0.008, [1, 3]],
-  4: [140, [0.31, 0.33, 0.45, 0.6, 0.02], 1800, 0.012, [1, 1]],
+  1: [150, [0.57, 0.23, 0.5, 0.68, 0.02], 1900, 0.006, [1, 6]],
+  2: [60, [0.4, 0.48, 0.6, 0.7, 0.05], 3400, 0.004, [10, 25]],
+  3: [220, [0.34, 0.42, 0.55, 0.6, 0.03], 5200, 0.006, [1, 4]],
+  4: [130, [0.26, 0.35, 0.4, 0.62, 0.02], 2100, 0.008, [1, 3]],
   5: [90, [0.39, 0.43, 0.6, 0.66, 0.04], 2300, 0.005, [2, 8]],
-  6: [150, [0.57, 0.23, 0.5, 0.68, 0.02], 1900, 0.006, [1, 6]],
+  6: [140, [0.31, 0.33, 0.45, 0.6, 0.02], 1800, 0.012, [1, 1]],
 };
 // Each store's share of the sample customers.
 const STORE_WEIGHT: Record<string, number> = {

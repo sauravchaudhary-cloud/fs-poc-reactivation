@@ -5,6 +5,9 @@
 // Order matters: lib/ai.ts reads the API keys when first imported, so modules are imported where they're used; fetch is
 // swapped for a stub and back around the cases that need one; and the webhook remembers each phone between messages.
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { flows } from "../content/flows/index.ts";
 import { faq } from "../content/replies.ts";
 import { careBy, conciergeBy, declines, flowByKey, parsePayload, payload, toGupshup, unfold } from "../lib/bot.ts";
@@ -13,6 +16,11 @@ import { intent } from "../lib/read.ts";
 // Offline, whatever the shell has set: with a Gemini key and no Anthropic one, lib/ai.ts would pick Gemini on import
 // and the webhook section would call Google for real.
 delete process.env.GEMINI_API_KEY;
+// The scripted and stand-in model calls stay out of the app's logs/, which the demo's Anthropic tab shows: the logger
+// writes to logs/ in the working directory, so the checks run from a folder of their own.
+const workdir = join(tmpdir(), "foodstories-check");
+mkdirSync(workdir, { recursive: true });
+process.chdir(workdir);
 
 // For the sections that stub fetch: the real one to put back, and the catalogue (Magento GraphQL, read by lib/store.ts).
 const realFetch = globalThis.fetch;
@@ -438,8 +446,8 @@ console.log("✓ every node is a Gupshup message, every tap leads back to a node
   );
   // The rule each reply breaks.
   for (const [text, rule] of [
-    ["It's ₹1,300 today.", "a number it wasn't shown"],
-    ["Call us on 98765 43210.", "a number it wasn't shown"],
+    ["It's ₹1,300 today.", "a number it wasn't shown (1300)"],
+    ["Call us on 98765 43210.", "a number it wasn't shown (98765, 43210)"],
     ["Use code FEAST for 10% off!", "a deal"],
     ["You'll get free delivery on this one.", "a deal"],
     ["It should be back in stock next week.", "stock forecast"],
@@ -449,34 +457,34 @@ console.log("✓ every node is a Gupshup message, every tap leads back to a node
     ["I'll call you in ten minutes.", "an action nobody takes"],
     ["It has been added to your basket.", "an action nobody takes"], // only the bot says what add_to_basket did
     ["I'll add it now.", "an action nobody takes"],
-    ["Connecting you with customer care right away.", "a time only customer care can give"],
-    ["Our team will sort it out.", "banned words"],
+    ["We noticed you were looking at the brie.", "surveillance language"],
     ["That wine pairs well with it.", "alcohol"],
     ["See https://evil.example/pay for details.", "a link off the site"],
     ["This honey boosts immunity.", "a health claim"],
     ["Only 2 left, hurry!", "false urgency"],
-    ["It's 100% pure.", "a claim the product data doesn't make"],
-    ["A lovely healthy snack.", "a claim the product data doesn't make"],
     ["Apply code FS50 at checkout.", "a deal"],
     ["आपको ५०% छूट मिल गई है, कीमत ₹९९ है", "a deal"],
-    ["कीमत ₹९९ है", "a number it wasn't shown"],
+    ["कीमत ₹९९ है", "a number it wasn't shown (99)"],
     ["यह शहद डायबिटीज़ में फायदेमंद है", "a health claim"],
     ["हमारे पास रेड वाइन है", "alcohol"],
     ["Daaru nahi milegi yahan", "alcohol"],
     ["You'll get cashback on this.", "a deal"],
   ])
     assert.equal(vet(text, shown), rule, text);
-  for (const text of ["Shall I add the Manchego to your basket?", "Would you like me to add it?"])
-    assert.equal(vet(text, shown), undefined, text); // it can now: on a yes, add_to_basket
-  assert.equal(
-    vet("We can't call foods healthy or give diet advice, but here are some fresh picks.", shown),
-    undefined,
-  ); // declining the claim isn't making it
-  assert.equal(
-    vet("We can't call foods healthy, but these are organic.", shown),
-    "a claim the product data doesn't make",
-  );
-  assert.equal(vet("The Organic Baby Spinach is in.", "Organic Baby Spinach"), undefined); // the label says it
+  // What the prototype lets through: offers it can keep (on a yes, add_to_basket), offers that wait on their answer,
+  // polite Hindi, and copy style, which is the prompt's to hold.
+  for (const text of [
+    "Shall I add the Manchego to your basket?",
+    "Would you like me to add it?",
+    "Shall I put it in your basket?",
+    "Tell me the items and I'll check them at our Vasant Kunj store.",
+    "Once you pick one, I'll add it to your basket.",
+    "आप क्या पसंद करेंगे?",
+    "Our team will sort it out.",
+    "Customer care will reply shortly.",
+    "A lovely healthy snack, all natural.",
+  ])
+    assert.equal(vet(text, shown), undefined, text);
   // WhatsApp's formatting: Markdown's headings, bold and links rewritten.
   assert.equal(
     tidy("## Hi\n**Burrata** is in. [Basket](https://www.foodstories.shop/basket)"),
@@ -552,13 +560,9 @@ const ask = {
     ],
     [undefined, [{ title: "Add to basket", next: "add:manchego-cheese" }], true],
   ); // the product it linked: one tap to add, its page in the text
+  // The model gets a ref for each product, not its page: it writes back far fewer tokens.
   assert.deepEqual(JSON.parse(lastRequest.messages.at(-1).content[0].content), [
-    {
-      name: "Manchego Cheese",
-      price_inr: 2000,
-      in_stock: true,
-      url: "https://www.foodstories.shop/shop/product/manchego-cheese/",
-    },
+    { ref: "p1", name: "Manchego Cheese", price_inr: 2000, in_stock: true },
   ]);
   assert.ok(!JSON.stringify(lastRequest).includes("demo"), "the phone never reaches the model");
 
@@ -757,7 +761,8 @@ const ask = {
   // This catalogue answers a lookup by page key with just those products. The brie is sold out, and the Begum
   // Victoria's photo is Magento's placeholder.
   const basketCatalogue = async (url, req) => {
-    const { keys } = JSON.parse(req.body).variables;
+    // A read comes as a GET, its variables in the URL; the stock check as products go in posts them.
+    const { keys } = req.body ? JSON.parse(req.body).variables : JSON.parse(new URL(url).searchParams.get("variables"));
     const all = [
       catalogueItem("Manchego Cheese", "manchego-cheese", 2000, {
         photo: "https://cdn.example/catalog/product/cache/9bb9e06b/manchego.jpg",
@@ -833,7 +838,7 @@ const ask = {
     ),
   );
   assert.deepEqual([outcome.kind, outcome.added], ["say", undefined]);
-  assert.match(JSON.stringify(lastRequest.messages.at(-1)), /each by a page a tool or the chat gave/);
+  assert.match(JSON.stringify(lastRequest.messages.at(-1)), /each by a search's ref or a page the chat gave/);
   outcome = await answer(
     afterPicks,
     scriptedModel(
@@ -870,6 +875,20 @@ const ask = {
       ],
     ],
   ); // the sold-out brie and a page no search gave are left out
+  // By the refs the search gave (p1 the Manchego, p3 the sourdough, p4 the sold-out brie), as the model names them.
+  outcome = await modelSuggests(["p1", "p3", "p4", "p9"]);
+  assert.deepEqual(
+    outcome.more.map((card) => card.buttons[0].next),
+    ["add:manchego-cheese", "add:country-sourdough"],
+  ); // no search gave a p9
+  outcome = await answer(
+    ask,
+    scriptedModel(
+      toolTurn("search_products", { query: "bread" }),
+      toolTurn("add_to_basket", { items: [{ product: "p3", qty: 2 }] }),
+    ),
+  );
+  assert.deepEqual(outcome.added?.added, [{ name: "Country Sourdough", qty: 2, unit_price_inr: 175 }]);
   // One product: one message, its page under the reply, Add to basket.
   outcome = await modelSuggests([productPage("manchego-cheese").replace("www.", "")]);
   assert.deepEqual(
@@ -1195,7 +1214,8 @@ const ask = {
   assert.doesNotMatch(said, /WA AI Reply/);
   // A suggested reply goes to the AI as typed text.
   apiTurns.push(toolUse("reply", { text: "Here are a few for less." }));
-  assert.match(await chat(shopper, "Something cheaper", "ask"), /WA AI Reply[\s\S]*Here are a few for less\./);
+  // CleverTap hears the AI's answer after the customer has it.
+  assert.match(await chat(shopper, "Something cheaper", "ask"), /Here are a few for less\.[\s\S]*WA AI Reply/);
 
   // A carousel goes as one message, and its cards' pages stay in the chat the AI reads, so "add the second one" works.
   globalThis.fetch = withCatalogue([
